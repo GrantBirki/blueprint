@@ -1,5 +1,16 @@
+// @ts-nocheck
 'use strict';
-importScripts('balatro-sim.js');
+
+import {
+  Hand,
+  EDITION,
+  ENHANCEMENT,
+  RANK,
+  CARD_DISABLED,
+  bigBigAdd,
+  bigTimes,
+  normalizeBig
+} from "../sim/balatro-sim";
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));

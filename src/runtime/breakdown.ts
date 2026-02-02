@@ -1,4 +1,7 @@
+// @ts-nocheck
 "use strict";
+
+import { hands } from "./data";
 
 const handChips = [
   [160, 16, 50, 3],
@@ -2226,3 +2229,5 @@ class Hand {
     return this.simulate();
   }
 };
+
+export { Hand, normalizeBig, cardValues, QUEEN };

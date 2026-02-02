@@ -1,3 +1,11 @@
+// @ts-nocheck
+
+import { state } from "./state";
+import { hands, handColors } from "./data";
+import { Hand, normalizeBig } from "./breakdown";
+import { numberWithCommas, bigNumberWithCommas } from "./format";
+import { redrawPlayfieldHTML } from "./main";
+
 const THREADS = navigator.hardwareConcurrency;
 
 const threads = [];
@@ -6,156 +14,14 @@ let taskID = Math.random();
 let tasks = 0;
 
 let bestScore;
-let bestHand = [];
-let bestJokers = [];
 
 const bestPlayScoreDiv = document.getElementById('bestPlayScore');
 const bestPlayNameDiv = document.getElementById('bestPlayName');
 const scoreChipsDiv = document.getElementById('scoreChips');
 const scoreMultDiv = document.getElementById('scoreMult');
+const breakdownDiv = document.getElementById('Breakdown');
 const chipIcon = '<span class="chipIcon"></span>';
-
-let optimizeJokers = true;
-let optimizeCards = true;
-const toggleJokerDiv = document.getElementById('toggleJokerBtn');
-const toggleCardDiv = document.getElementById('toggleCardBtn');
-const minimizeDiv = document.getElementById('toggleMinimizeBtn');
-const toggleTheFlintDiv = document.getElementById('toggleTheFintBtn');
-const toggleTheEyeDiv = document.getElementById('toggleTheEyeBtn');
-const togglePlasmaDiv = document.getElementById('togglePlasmaBtn');
-const toggleObservatoryDiv = document.getElementById('toggleObservatoryBtn');
-
-let theFlint = false;
-let theEye = false;
-let plasmaDeck = false;
-let observatory = false;
-
-let minimize = false;
-let optimizeMode = 0;
-
-function toggleMinimize() {
-  minimize = !minimize;
-  redrawPlayfield();
-
-  if(minimize) {
-    minimizeDiv.innerText = 'X';
-  }
-  else {
-    minimizeDiv.innerHTML = '&nbsp;';
-  }
-}
-
-function toggleJoker() {
-  optimizeJokers = !optimizeJokers;
-  if(optimizeJokers) {
-    if(optimizeCards && (Object.keys(playfieldJokers).length >= 8 || Object.keys(playfieldCards).length >= 10)) {
-      toggleCard();
-    }
-  }
-  redrawPlayfield();
-
-  if(optimizeJokers) {
-    toggleJokerDiv.innerText = 'X';
-  }
-  else {
-    toggleJokerDiv.innerHTML = '&nbsp;';
-  }
-}
-
-function toggleCard() {
-  optimizeCards = !optimizeCards;
-  if(optimizeCards) {
-    if(optimizeJokers && (Object.keys(playfieldJokers).length >= 8 || Object.keys(playfieldCards).length >= 10)) {
-      toggleJoker();
-    }
-  }
-  redrawPlayfield();
-
-  if(optimizeCards) {
-    toggleCardDiv.innerText = 'X';
-  }
-  else {
-    toggleCardDiv.innerHTML = '&nbsp;';
-  }
-}
-
-function togglePlasma() {
-  plasmaDeck = !plasmaDeck;
-  redrawPlayfield();
-
-  if(plasmaDeck) {
-    togglePlasmaDiv.innerText = 'X';
-  }
-  else {
-    togglePlasmaDiv.innerHTML = '&nbsp;';
-  }
-}
-
-function toggleTheFlint() {
-  theFlint = !theFlint;
-  redrawPlayfield();
-
-  if(theFlint) {
-    toggleTheFlintDiv.innerText = 'X';
-  }
-  else {
-    toggleTheFlintDiv.innerHTML = '&nbsp;';
-  }
-}
-
-function toggleTheEye() {
-  theEye = !theEye;
-  redrawPlayfield();
-
-  if(theEye) {
-    toggleTheEyeDiv.innerText = 'X';
-  }
-  else {
-    toggleTheEyeDiv.innerHTML = '&nbsp;';
-  }
-}
-
-function toggleObservatory() {
-  observatory = !observatory;
-  redrawPlayfield();
-
-  if(observatory) {
-    toggleObservatoryDiv.innerText = 'X';
-    consumables.style.display = 'block';
-  }
-  else {
-    toggleObservatoryDiv.innerHTML = '&nbsp;';
-    consumables.style.display = 'none';
-  }
-}
-
-function togglePlayed(index) {
-  hands[index].playedThisRound = hands[index].playedThisRound ? 0 : 1;
-
-  redrawPlayfield();
-
-  if(hands[index].playedThisRound) {
-    handLevels.children[index].children[0].innerText = 'X';
-  }
-  else {
-    handLevels.children[index].children[0].innerHTML = '&nbsp;';
-  }
-}
-
-function invertPlayedHands(index) {
-  for(let index = 0; index < hands.length; index++) {
-    hands[index].playedThisRound = hands[index].playedThisRound ? 0 : 1;
-
-    if(hands[index].playedThisRound) {
-      handLevels.children[index].children[0].innerText = 'X';
-    }
-    else {
-      handLevels.children[index].children[0].innerHTML = '&nbsp;';
-    }
-  }
-
-  redrawPlayfield();
-}
+let breakdownHTML = '';
 
 function permutations(inputArr) {
   var results = [];
@@ -205,16 +71,16 @@ function terminateThreads() {
     threads[i].terminate();
   }
 
-  let state = {
-    cards: Object.keys(playfieldCards).map((a, index) => {
+  const payload = {
+    cards: Object.keys(state.playfieldCards).map((a, index) => {
       return [
-        playfieldCards[a].type[1],
-        playfieldCards[a].type[0],
-        getEdition(playfieldCards[a].modifiers),
-        getEnhancement(playfieldCards[a].modifiers),
-        playfieldCards[a].modifiers.double ? 2 : 0,
+        state.playfieldCards[a].type[1],
+        state.playfieldCards[a].type[0],
+        getEdition(state.playfieldCards[a].modifiers),
+        getEnhancement(state.playfieldCards[a].modifiers),
+        state.playfieldCards[a].modifiers.double ? 2 : 0,
         0, // extra chips
-        playfieldCards[a].modifiers.disabled,
+        state.playfieldCards[a].modifiers.disabled,
         index
       ];
     }),
@@ -226,39 +92,39 @@ function terminateThreads() {
         a.playedThisRound
       ];
     }),
-    TheFlint: theFlint,
-    TheEye: theEye,
-    PlasmaDeck: plasmaDeck,
-    Observatory: observatory,
+    TheFlint: state.theFlint,
+    TheEye: state.theEye,
+    PlasmaDeck: state.plasmaDeck,
+    Observatory: state.observatory,
     taskID,
-    optimizeCards,
-    minimize,
-    optimizeMode,
-    bestHand: bestHand.map(a => {
-      return Object.keys(playfieldCards).indexOf(a);
+    optimizeCards: state.optimizeCards,
+    minimize: state.minimize,
+    optimizeMode: state.optimizeMode,
+    bestHand: state.bestHand.map(a => {
+      return Object.keys(state.playfieldCards).indexOf(a);
     }),
-    jokers: Object.keys(playfieldJokers).map((a, index) => {
+    jokers: Object.keys(state.playfieldJokers).map((a, index) => {
       return [
-        playfieldJokers[a].type[0] * 10 + playfieldJokers[a].type[1],
-        playfieldJokers[a].value,
-        getEdition(playfieldJokers[a].modifiers),
-        playfieldJokers[a].modifiers.disabled,
-        playfieldJokers[a].sell,
+        state.playfieldJokers[a].type[0] * 10 + state.playfieldJokers[a].type[1],
+        state.playfieldJokers[a].value,
+        getEdition(state.playfieldJokers[a].modifiers),
+        state.playfieldJokers[a].modifiers.disabled,
+        state.playfieldJokers[a].sell,
         index
       ];
     })
   };
 
-  breakdownHand.TheFlint = theFlint;
-  breakdownHand.TheEye = theEye;
-  breakdownHand.PlasmaDeck = plasmaDeck;
-  breakdownHand.Observatory = observatory;
-  breakdownHand.hands = state.hands;
+  breakdownHand.TheFlint = state.theFlint;
+  breakdownHand.TheEye = state.theEye;
+  breakdownHand.PlasmaDeck = state.plasmaDeck;
+  breakdownHand.Observatory = state.observatory;
+  breakdownHand.hands = hands;
 
   for(let i = 0; i < THREADS; i++) {
-    threads[i] = new Worker('worker.js');
+    threads[i] = new Worker(new URL('../worker/worker.ts', import.meta.url), { type: 'module' });
     threads[i].onmessage = workerMessage;
-    threads[i].postMessage(['start', {...state, workerID: i}]);
+    threads[i].postMessage(['start', {...payload, workerID: i}]);
   }
 }
 
@@ -277,7 +143,7 @@ let tmpMedianScore;
 function workerMessage(msg) {
   if(msg.data[0] === taskID) {
     tasks--;
-    // id, bestScore, bestJokers, bestCards, high, low
+    // id, bestScore, state.bestJokers, bestCards, high, low
     if(!bestScore) {
       bestScore = msg.data[1];
       tmpBestJokers = msg.data[2];
@@ -291,7 +157,7 @@ function workerMessage(msg) {
       tmpBestID = msg.data[10];
       tmpCompiledValues = msg.data[11];
     }
-    if(minimize) {
+    if(state.minimize) {
       if(msg.data[1][1] < bestScore[1] || (msg.data[1][1] === bestScore[1] && msg.data[1][0] < bestScore[0])) {
         bestScore = msg.data[1];
         tmpBestJokers = msg.data[2];
@@ -387,12 +253,14 @@ function workerMessage(msg) {
       }
     }
     if(tasks === 0) {
-      bestJokers = tmpBestJokers.map(a => {
-        return Object.keys(playfieldJokers)[a[5]];
+      state.bestJokers = tmpBestJokers.map(a => {
+        return Object.keys(state.playfieldJokers)[a[5]];
       });
-      bestHand = tmpBestCards.map(a => {
-        return Object.keys(playfieldCards)[a[7]];
+      state.bestHand = tmpBestCards.map(a => {
+        return Object.keys(state.playfieldCards)[a[7]];
       });
+      state.lastTypeOfHand = tmpTypeOfHand;
+      state.lastCompiledValues = tmpCompiledValues;
 
       if(tmpBestHighHand[0] === tmpBestLowHand[0] && tmpBestHighHand[1] === tmpBestLowHand[1]) {
         bestPlayScoreDiv.innerHTML = chipIcon + bigNumberWithCommas(tmpBestHighHand, true);
@@ -420,7 +288,7 @@ function workerMessage(msg) {
       updateBreakdown(breakdownHand.breakdown.map(a => {
         return {
           ...a,
-          cards: a.cards.map(b => b[7] === undefined ? Object.keys(playfieldJokers)[b[5]] : Object.keys(playfieldCards)[b[7]])
+          cards: a.cards.map(b => b[7] === undefined ? Object.keys(state.playfieldJokers)[b[5]] : Object.keys(state.playfieldCards)[b[7]])
         }
       }));
     }
@@ -436,11 +304,11 @@ function updateBreakdown(breakdown) {
     let breakdownCards = '';
     for(let id of line.cards) {
       if(id[0] === 'j') {
-        breakdownCards += `<div class='tooltip'><div class="playfieldCard jokerCard${playfieldJokers[id].string}></div>` +
+        breakdownCards += `<div class='tooltip'><div class="playfieldCard jokerCard${state.playfieldJokers[id].string}></div>` +
         `</div>`;
       }
       else {
-        breakdownCards += `<div class="tooltip"><div class="playfieldCard${playfieldCards[id].string}></div>` +
+        breakdownCards += `<div class="tooltip"><div class="playfieldCard${state.playfieldCards[id].string}></div>` +
         `</div>`;
       }
     }
@@ -464,7 +332,7 @@ function updateBreakdown(breakdown) {
       `</div>`;
   }
 
-  tabs[3].innerHTML = breakdownHTML;
+  breakdownDiv.innerHTML = breakdownHTML;
 }
 
 function factorial(n) {
@@ -493,16 +361,16 @@ function calculator() {
 
   terminateThreads();
 
-  if(Object.keys(playfieldJokers).length === 0) {
+  if(Object.keys(state.playfieldJokers).length === 0) {
     threads[0].postMessage(['once']);
     tasks = 1;
   }
-  else if(!optimizeJokers) {
+  else if(!state.optimizeJokers) {
     threads[0].postMessage(['dontOptimizeJokers']);
     tasks = 1;
   }
   else {
-    let possibleJokers = factorial(Object.keys(playfieldJokers).length);
+    let possibleJokers = factorial(Object.keys(state.playfieldJokers).length);
     let tasksPerThread = Math.ceil(possibleJokers / THREADS);
 
     for(let i = 0; i < THREADS; i++) {
@@ -515,31 +383,7 @@ function calculator() {
     }
   }
 
-  bestJokers = Object.keys(playfieldJokers);
+  state.bestJokers = Object.keys(state.playfieldJokers);
 }
 
-function numberWithCommas(x) {
-  if(typeof x === 'object') return bigNumberWithCommas(x);
-  if(x < 1e11) {
-    if((Math.floor(x * 10000) / 10000) % 1 !== 0) {
-      return Math.floor(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + '.' + (Math.floor(Math.round((x % 1) * 10000) / 10)+'').padStart(3, 0).replace(/0+$/, '');
-    }
-    return Math.floor(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  }
-  return `${Math.floor(x/(10**Math.floor(Math.log10(x)))*10000)/10000}e${Math.floor(Math.log10(x))}`;
-}
-
-function bigNumberWithCommas(num, whole = false) {
-  if(num && num[1] > 11) {
-    return `${Math.floor(num[0] * 10000) / 10000}e${num[1]}`;
-  }
-
-  const x = num[0] * (10 ** num[1]);
-  if((Math.floor(x * 10000) / 10000) % 1 !== 0) {
-    if(whole) {
-      return Math.floor(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    }
-    return Math.floor(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + '.' + (Math.floor(Math.round((x % 1) * 10000) / 10)+'').padStart(3, 0).replace(/0+$/, '');
-  }
-  return Math.floor(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
+export { calculator };

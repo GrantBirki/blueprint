@@ -1,1 +1,13 @@
-# TODO run the unit test suite
+#!/usr/bin/env bash
+set -euo pipefail
+
+COVERAGE_DIR="tmp/coverage"
+LCOV_FILE="tmp/coverage.lcov"
+
+rm -rf "$COVERAGE_DIR" "$LCOV_FILE"
+
+deno test --allow-read="." --coverage="$COVERAGE_DIR"
+
+deno coverage --lcov --output="$LCOV_FILE" "$COVERAGE_DIR"
+
+deno run --allow-read="." "test/coverage_check.js" "$LCOV_FILE"

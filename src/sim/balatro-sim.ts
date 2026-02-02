@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 
 const handChips = [
@@ -1835,4 +1836,15 @@ class Hand {
     this.randomMode = 2;
     return this.simulate();
   }
+};
+
+export {
+  Hand,
+  EDITION,
+  ENHANCEMENT,
+  RANK,
+  CARD_DISABLED,
+  bigBigAdd,
+  bigTimes,
+  normalizeBig
 };

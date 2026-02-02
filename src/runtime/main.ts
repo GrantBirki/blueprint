@@ -1,3 +1,42 @@
+// @ts-nocheck
+
+import { state } from "./state";
+import { hands, handColors } from "./data";
+import {
+  jokerPrice,
+  jokerTexts,
+  rankNames,
+  suitNames,
+  rarityNames,
+  endc,
+  multc,
+  prodc,
+  chipc,
+  numc,
+  moneyc,
+  probc,
+  shadowc,
+  diamondc,
+  heartc,
+  spadec,
+  clubc,
+  diamondsc,
+  heartsc,
+  spadesc,
+  clubsc,
+  spectralc,
+  planetc,
+  tarotc,
+  celestialc,
+  negativec,
+  commonc,
+  roomc
+} from "./cards";
+import { numberWithCommas } from "./format";
+import { cardValues, QUEEN } from "./breakdown";
+import { calculator } from "./manageWorkers";
+import { compileHand } from "./hand-url";
+
 const menuBtns = [
   document.getElementById('JokersBtn'),
   document.getElementById('CardsBtn'),
@@ -14,16 +53,10 @@ const tabs = [
   document.getElementById('ModifyJoker'),
 ];
 
-let searchVal = '';
-
 for(let i = 0; i < menuBtns.length; i++) {
   menuBtns[i].addEventListener('click', changeTab(i));
   tabs[i].style.display = "none";
 }
-
-let revertToTab = 0;
-let modifyingJoker = false;
-let modifyingJokerValue = 0;
 
 let modifyingJokerValTxt = document.getElementById('modValue');
 let modifyingJokerValueDiv = document.getElementById('modifyJokerValue');
@@ -34,7 +67,7 @@ let highContrastDiv = document.getElementById('highContrastBtn');
 
 function changeTab(tab) {
   return () => {
-    revertToTab = tab === 4 ? revertToTab : tab;
+    state.revertToTab = tab === 4 ? state.revertToTab : tab;
     for(let i = 0; i < menuBtns.length; i++) {
       menuBtns[i].classList.remove('active');
       tabs[i].style.display = "none";
@@ -42,147 +75,21 @@ function changeTab(tab) {
     menuBtns[tab].classList.add('active');
     tabs[tab].style.display = "block";
 
-    modifyingJoker = false;
+    state.modifyingJoker = false;
   }
 }
 
 changeTab(0)();
 
-const hands = [
-  {
-    name: "Flush Five",
-    planet: "Eris",
-    mult: 16,
-    chips: 160,
-    s_mult: 16,
-    s_chips: 160,
-    l_mult: 3,
-    l_chips: 50
-  },
-  {
-    name: "Flush House",
-    planet: "Ceres",
-    mult: 14,
-    chips: 140,
-    s_mult: 14,
-    s_chips: 140,
-    l_mult: 4,
-    l_chips: 40
-  },
-  {
-    name: "Five of a Kind",
-    planet: "Planet X",
-    mult: 12,
-    chips: 120,
-    s_mult: 12,
-    s_chips: 120,
-    l_mult: 3,
-    l_chips: 35
-  },
-  {
-    name: "Straight Flush",
-    planet: "Neptune",
-    mult: 8,
-    chips: 100,
-    s_mult: 8,
-    s_chips: 100,
-    l_mult: 4,
-    l_chips: 40
-  },
-  {
-    name: "Four of a Kind",
-    planet: "Mars",
-    mult: 7,
-    chips: 60,
-    s_mult: 7,
-    s_chips: 60,
-    l_mult: 3,
-    l_chips: 30
-  },
-  {
-    name: "Full House",
-    planet: "Earth",
-    mult: 4,
-    chips: 40,
-    s_mult: 4,
-    s_chips: 40,
-    l_mult: 2,
-    l_chips: 25
-  },
-  {
-    name: "Flush",
-    planet: "Jupiter",
-    mult: 4,
-    chips: 35,
-    s_mult: 4,
-    s_chips: 35,
-    l_mult: 2,
-    l_chips: 15
-  },
-  {
-    name: "Straight",
-    planet: "Saturn",
-    mult: 4,
-    chips: 30,
-    s_mult: 4,
-    s_chips: 30,
-    l_mult: 3,
-    l_chips: 30
-  },
-  {
-    name: "Three of a Kind",
-    planet: "Venus",
-    mult: 3,
-    chips: 30,
-    s_mult: 3,
-    s_chips: 30,
-    l_mult: 2,
-    l_chips: 20
-  },
-  {
-    name: "Two Pair",
-    planet: "Uranus",
-    mult: 2,
-    chips: 20,
-    s_mult: 2,
-    s_chips: 20,
-    l_mult: 1,
-    l_chips: 20
-  },
-  {
-    name: "Pair",
-    planet: "Mercury",
-    mult: 2,
-    chips: 10,
-    s_mult: 2,
-    s_chips: 10,
-    l_mult: 1,
-    l_chips: 15
-  },
-  {
-    name: "High Card",
-    planet: "Pluto",
-    mult: 1,
-    chips: 5,
-    s_mult: 1,
-    s_chips: 5,
-    l_mult: 1,
-    l_chips: 10
-  }
-];
-
-const handColors = [
-  '#efefef',
-  '#95acff',
-  '#65efaf',
-  '#fae37e',
-  '#ffc052',
-  '#f87d75',
-  '#caa0ef'
-];
-
 const handLevels = document.getElementById('hands');
 const consumables = document.getElementById('consumables');
+const toggleJokerDiv = document.getElementById('toggleJokerBtn');
+const toggleCardDiv = document.getElementById('toggleCardBtn');
+const minimizeDiv = document.getElementById('toggleMinimizeBtn');
+const toggleTheFlintDiv = document.getElementById('toggleTheFintBtn');
+const toggleTheEyeDiv = document.getElementById('toggleTheEyeBtn');
+const togglePlasmaDiv = document.getElementById('togglePlasmaBtn');
+const toggleObservatoryDiv = document.getElementById('toggleObservatoryBtn');
 
 function incrementLevel(inc, handIndex) {
   const hand = hands[handIndex];
@@ -301,8 +208,132 @@ function addLvlText(handIndex) {
   div.children[2].innerText = 'lvl.'+hand.level;
 }
 
+function toggleMinimize() {
+  state.minimize = !state.minimize;
+  redrawPlayfield();
+
+  if(state.minimize) {
+    minimizeDiv.innerText = 'X';
+  }
+  else {
+    minimizeDiv.innerHTML = '&nbsp;';
+  }
+}
+
+function toggleJoker() {
+  state.optimizeJokers = !state.optimizeJokers;
+  if(state.optimizeJokers) {
+    if(state.optimizeCards && (Object.keys(state.playfieldJokers).length >= 8 || Object.keys(state.playfieldCards).length >= 10)) {
+      toggleCard();
+    }
+  }
+  redrawPlayfield();
+
+  if(state.optimizeJokers) {
+    toggleJokerDiv.innerText = 'X';
+  }
+  else {
+    toggleJokerDiv.innerHTML = '&nbsp;';
+  }
+}
+
+function toggleCard() {
+  state.optimizeCards = !state.optimizeCards;
+  if(state.optimizeCards) {
+    if(state.optimizeJokers && (Object.keys(state.playfieldJokers).length >= 8 || Object.keys(state.playfieldCards).length >= 10)) {
+      toggleJoker();
+    }
+  }
+  redrawPlayfield();
+
+  if(state.optimizeCards) {
+    toggleCardDiv.innerText = 'X';
+  }
+  else {
+    toggleCardDiv.innerHTML = '&nbsp;';
+  }
+}
+
+function togglePlasma() {
+  state.plasmaDeck = !state.plasmaDeck;
+  redrawPlayfield();
+
+  if(state.plasmaDeck) {
+    togglePlasmaDiv.innerText = 'X';
+  }
+  else {
+    togglePlasmaDiv.innerHTML = '&nbsp;';
+  }
+}
+
+function toggleTheFlint() {
+  state.theFlint = !state.theFlint;
+  redrawPlayfield();
+
+  if(state.theFlint) {
+    toggleTheFlintDiv.innerText = 'X';
+  }
+  else {
+    toggleTheFlintDiv.innerHTML = '&nbsp;';
+  }
+}
+
+function toggleTheEye() {
+  state.theEye = !state.theEye;
+  redrawPlayfield();
+
+  if(state.theEye) {
+    toggleTheEyeDiv.innerText = 'X';
+  }
+  else {
+    toggleTheEyeDiv.innerHTML = '&nbsp;';
+  }
+}
+
+function toggleObservatory() {
+  state.observatory = !state.observatory;
+  redrawPlayfield();
+
+  if(state.observatory) {
+    toggleObservatoryDiv.innerText = 'X';
+    consumables.style.display = 'block';
+  }
+  else {
+    toggleObservatoryDiv.innerHTML = '&nbsp;';
+    consumables.style.display = 'none';
+  }
+}
+
+function togglePlayed(index) {
+  hands[index].playedThisRound = hands[index].playedThisRound ? 0 : 1;
+
+  redrawPlayfield();
+
+  if(hands[index].playedThisRound) {
+    handLevels.children[index].children[0].innerText = 'X';
+  }
+  else {
+    handLevels.children[index].children[0].innerHTML = '&nbsp;';
+  }
+}
+
+function invertPlayedHands() {
+  for(let index = 0; index < hands.length; index++) {
+    hands[index].playedThisRound = hands[index].playedThisRound ? 0 : 1;
+
+    if(hands[index].playedThisRound) {
+      handLevels.children[index].children[0].innerText = 'X';
+    }
+    else {
+      handLevels.children[index].children[0].innerHTML = '&nbsp;';
+    }
+  }
+
+  redrawPlayfield();
+}
+
 const jokerValueHTML = document.getElementById('jokerVal');
-let jokerValue = 0;
+state.jokerValue = 0;
 
 const jokerCountHTML = document.getElementById('jokerCnt');
 let jokerCount = 1;
@@ -311,11 +342,11 @@ const cardCountHTML = document.getElementById('cardCnt');
 let cardCount = 1;
 
 function incrementJokerValue(inc) {
-  jokerValue += inc;
+  state.jokerValue += inc;
   if(inc === 0) {
-    jokerValue = 0;
+    state.jokerValue = 0;
   }
-  jokerValueHTML.innerText = jokerValue;
+  jokerValueHTML.innerText = state.jokerValue;
   jredrawCards();
 }
 
@@ -327,15 +358,15 @@ function setJokerValue() {
     willBlur = true;
   }
   if(!isNaN(jokerValueHTML.innerText)) {
-    jokerValue = Math.round(jokerValueHTML.innerText * 1);
+    state.jokerValue = Math.round(jokerValueHTML.innerText * 1);
   }
   else {
-    jokerValue = 0;
+    state.jokerValue = 0;
   }
 
   if(willBlur) {
     jokerValueHTML.blur();
-    jokerValueHTML.innerText = jokerValue;
+    jokerValueHTML.innerText = state.jokerValue;
   }
 
   jredrawCards();
@@ -426,42 +457,19 @@ for(let i = 0; i < hands.length; i++) {
   </div>`;
 }
 
-const modifiers = {
-  foil: false,
-  holographic: false,
-  polychrome: false,
-  stone: false,
-  increment: false,
-  mult: false,
-  wild: false,
-  chance: false,
-  glass: false,
-  steel: false,
-  gold: false,
-  double: false,
-  disabled: false
-};
-
 let modifierString = ', url(assets/Enhancers.png) -71px 0px';
 let modifierPostString = '';
 
 let modifierClass = '';
 
-const jmodifiers = {
-  foil: false,
-  holographic: false,
-  polychrome: false,
-  disabled: false
-};
-
 function jtoggleCardModifier(name) {
-  if(('foil holographic polychrome disabled'.indexOf(name) >= 0) && !jmodifiers[name]) {
-    jmodifiers.foil = false;
-    jmodifiers.holographic = false;
-    jmodifiers.polychrome = false;
-    jmodifiers.disabled = false;
+  if(('foil holographic polychrome disabled'.indexOf(name) >= 0) && !state.jmodifiers[name]) {
+    state.jmodifiers.foil = false;
+    state.jmodifiers.holographic = false;
+    state.jmodifiers.polychrome = false;
+    state.jmodifiers.disabled = false;
   }
-  jmodifiers[name] = !jmodifiers[name];
+  state.jmodifiers[name] = !state.jmodifiers[name];
 
   jredrawCards();
 }
@@ -469,75 +477,75 @@ function jtoggleCardModifier(name) {
 function setModifierString() {
   modifierClass = '';
 
-  if(modifiers.stone) {
+  if(state.modifiers.stone) {
     modifierString = ', url(assets/Enhancers.png) 142px 0';
   }
-  else if(modifiers.increment) {
+  else if(state.modifiers.increment) {
     modifierString = ', url(assets/Enhancers.png) -71px -95px';
   }
-  else if(modifiers.mult) {
+  else if(state.modifiers.mult) {
     modifierString = ', url(assets/Enhancers.png) -142px -95px';
   }
-  else if(modifiers.wild) {
+  else if(state.modifiers.wild) {
     modifierString = ', url(assets/Enhancers.png) -213px -95px';
   }
-  else if(modifiers.chance) {
+  else if(state.modifiers.chance) {
     modifierString = ', url(assets/Enhancers.png) -284px -95px';
   }
-  else if(modifiers.glass) {
+  else if(state.modifiers.glass) {
     modifierString = ', url(assets/Enhancers.png) -355px -95px';
   }
-  else if(modifiers.steel) {
+  else if(state.modifiers.steel) {
     modifierString = ', url(assets/Enhancers.png) -426px -95px';
   }
-  else if(modifiers.gold) {
+  else if(state.modifiers.gold) {
     modifierString = ', url(assets/Enhancers.png) 71px 0px';
   }
   else {
     modifierString = ', url(assets/Enhancers.png) -71px 0px';
   }
 
-  if(modifiers.double) {
+  if(state.modifiers.double) {
     modifierPostString = 'url(assets/Enhancers.png) 142px 95px, ';
   }
   else {
     modifierPostString = 'url(assets/Jokers.png) 0px -855px, ';
   }
 
-  if(modifiers.foil) {
+  if(state.modifiers.foil) {
     modifierPostString += 'url(assets/Editions.png) -71px 0, ';
   }
-  else if(modifiers.holographic) {
+  else if(state.modifiers.holographic) {
     modifierPostString += 'url(assets/Editions.png) -142px 0, ';
   }
-  else if(modifiers.polychrome) {
+  else if(state.modifiers.polychrome) {
     modifierClass = ' polychrome';
     modifierPostString += 'url(assets/Editions.png) -213px 0, ';
   }
-  else if(modifiers.disabled) {
+  else if(state.modifiers.disabled) {
     modifierPostString += 'url(assets/Editions.png) 71px 0, ';
   }
 }
 
 function toggleCardModifier(name) {
-  if(('gold stone increment mult wild chance glass steel'.indexOf(name) >= 0) && !modifiers[name]) {
-    modifiers.stone = false;
-    modifiers.increment = false;
-    modifiers.mult = false;
-    modifiers.wild = false;
-    modifiers.chance = false;
-    modifiers.glass = false;
-    modifiers.steel = false;
-    modifiers.gold = false;
+  if(('gold stone increment mult wild chance glass steel'.indexOf(name) >= 0) && !state.modifiers[name]) {
+    state.modifiers.stone = false;
+    state.modifiers.increment = false;
+    state.modifiers.mult = false;
+    state.modifiers.wild = false;
+    state.modifiers.chance = false;
+    state.modifiers.glass = false;
+    state.modifiers.steel = false;
+    state.modifiers.gold = false;
   }
 
-  if(('foil holographic polychrome disabled'.indexOf(name) >= 0) && !modifiers[name]) {
-    modifiers.foil = false;
-    modifiers.holographic = false;
-    modifiers.polychrome = false;
-    modifiers.disabled = false;
+  if(('foil holographic polychrome disabled'.indexOf(name) >= 0) && !state.modifiers[name]) {
+    state.modifiers.foil = false;
+    state.modifiers.holographic = false;
+    state.modifiers.polychrome = false;
+    state.modifiers.disabled = false;
   }
-  modifiers[name] = !modifiers[name];
+  state.modifiers[name] = !state.modifiers[name];
 
   setModifierString();
 
@@ -547,19 +555,19 @@ function toggleCardModifier(name) {
 const cardsDiv = document.getElementById('cards');
 const jcardsDiv = document.getElementById('jokers');
 
-let highContrast = window.localStorage.hc === '1';
-if(highContrast) {
+state.highContrast = window.localStorage.hc === '1';
+if(state.highContrast) {
   highContrastDiv.innerText = 'X';
 }
 
 function cardString(i, j, hc = 0) {
-  if(modifiers.stone) {
+  if(state.modifiers.stone) {
     return `${modifierClass}" style="background: ` +
     `${modifierPostString}${modifierString.slice(2)}"`;
   }
   else {
     return `${modifierClass}" style="background: ` +
-    `${modifierPostString}url(assets/8BitDeck${(hc === 2 || (hc === 0 && highContrast))?'_opt2':''}.png) ` +
+    `${modifierPostString}url(assets/8BitDeck${(hc === 2 || (hc === 0 && state.highContrast))?'_opt2':''}.png) ` +
     `-${71*j}px -${95*i}px${modifierString}"`;
   }
 }
@@ -577,9 +585,9 @@ function redrawCards() {
 }
 
 function toggleContrast() {
-    highContrast = !highContrast;
-    window.localStorage.setItem('hc', highContrast?1:0);
-    if(highContrast) {
+    state.highContrast = !state.highContrast;
+    window.localStorage.setItem('hc', state.highContrast?1:0);
+    if(state.highContrast) {
       highContrastDiv.innerText = 'X';
     }
     else {
@@ -591,6 +599,78 @@ function toggleContrast() {
 }
 
 document.getElementById('highContrastBtn').addEventListener('click', toggleContrast);
+
+const jokerTemplateKeys = [
+  "state",
+  "hands",
+  "rankNames",
+  "suitNames",
+  "rarityNames",
+  "endc",
+  "multc",
+  "prodc",
+  "chipc",
+  "numc",
+  "moneyc",
+  "probc",
+  "shadowc",
+  "diamondc",
+  "heartc",
+  "spadec",
+  "clubc",
+  "diamondsc",
+  "heartsc",
+  "spadesc",
+  "clubsc",
+  "spectralc",
+  "planetc",
+  "tarotc",
+  "celestialc",
+  "negativec",
+  "commonc",
+  "roomc"
+];
+
+const jokerTemplateValues = [
+  state,
+  hands,
+  rankNames,
+  suitNames,
+  rarityNames,
+  endc,
+  multc,
+  prodc,
+  chipc,
+  numc,
+  moneyc,
+  probc,
+  shadowc,
+  diamondc,
+  heartc,
+  spadec,
+  clubc,
+  diamondsc,
+  heartsc,
+  spadesc,
+  clubsc,
+  spectralc,
+  planetc,
+  tarotc,
+  celestialc,
+  negativec,
+  commonc,
+  roomc
+];
+
+function renderJokerText(template) {
+  try {
+    return Function(...jokerTemplateKeys, `return \`${template}\`;`)(...jokerTemplateValues);
+  }
+  catch (err) {
+    console.error('Failed to render joker text', err);
+    return 'WIP';
+  }
+}
 
 function jokerString(i, j, modifiers) {
   let jmodifierClass = '';
@@ -633,9 +713,9 @@ function jredrawCards() {
     if(i === 9) {i++;}
     for(let j = 0; j < 10; j++) {
       const title = (jokerTexts.length > i && jokerTexts[i].length > j) ? jokerTexts[i][j][0] : 'WIP';
-      const description = (jokerTexts.length > i && jokerTexts[i].length > j) ? eval('`' + jokerTexts[i][j][1] + '`') : 'WIP';
-      if(title.toLowerCase().indexOf(searchVal.toLowerCase()) >= 0 || description.replace(/\<[^\>]+\>/g,'').toLowerCase().indexOf(searchVal.toLowerCase()) >= 0) {
-        txt += `<div class='tooltip'><div class="jokerCard${jokerString(i, j, jmodifiers)} onclick="addJoker(${i}, ${j})" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div><span class='tooltiptext'>` +
+      const description = (jokerTexts.length > i && jokerTexts[i].length > j) ? renderJokerText(jokerTexts[i][j][1]) : 'WIP';
+      if(title.toLowerCase().indexOf(state.searchVal.toLowerCase()) >= 0 || description.replace(/\<[^\>]+\>/g,'').toLowerCase().indexOf(state.searchVal.toLowerCase()) >= 0) {
+        txt += `<div class='tooltip'><div class="jokerCard${jokerString(i, j, state.jmodifiers)} onclick="addJoker(${i}, ${j})" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div><span class='tooltiptext'>` +
         `<div class='title'>${title}</div><br style="display: none">` +
         `<div class='desc'><span class='descContent'>${description}</span></span>` +
         `</div></div>`;
@@ -661,38 +741,40 @@ const cardsInHandDiv = document.getElementById('cardsInHand');
 const jokerLimitDiv = document.getElementById('jokerLimit');
 const handLimitDiv = document.getElementById('handLimit');
 
-let playfieldCards = {};
+state.playfieldCards = {};
 
 function updateTooltips() {
-  for(let joker in playfieldJokers) {
-    let i = playfieldJokers[joker].type[0];
-    let j = playfieldJokers[joker].type[1];
-    let jokerValue = playfieldJokers[joker].value;
-    playfieldJokers[joker].tooltip = (jokerTexts.length > i && jokerTexts[i].length > j) ? [jokerTexts[i][j][0], eval('`' + jokerTexts[i][j][1] + '`')] : ['WIP', 'WIP'];
+  const previousJokerValue = state.jokerValue;
+  for(let joker in state.playfieldJokers) {
+    let i = state.playfieldJokers[joker].type[0];
+    let j = state.playfieldJokers[joker].type[1];
+    state.jokerValue = state.playfieldJokers[joker].value;
+    state.playfieldJokers[joker].tooltip = (jokerTexts.length > i && jokerTexts[i].length > j) ? [jokerTexts[i][j][0], renderJokerText(jokerTexts[i][j][1])] : ['WIP', 'WIP'];
   }
+  state.jokerValue = previousJokerValue;
 }
 
 function addJoker(i, j, sell = false) {
   for(let k = 0; k < jokerCount; k++) {
     let id = 'j'+(Math.random()+'').slice(2);
-    while(playfieldJokers.hasOwnProperty(id)) {
+    while(state.playfieldJokers.hasOwnProperty(id)) {
       id = 'j'+(Math.random()+'').slice(2);
     }
 
-    playfieldJokers[id] = {
+    state.playfieldJokers[id] = {
       id,
       type: [i, j],
-      modifiers: {...jmodifiers},
-      value: jokerValue,
-      sell: sell !== false ? sell : Math.floor((jokerPrice[i][j] + ((jmodifiers.foil || jmodifiers.holographic || jmodifiers.polychrome) ? 1 : 0)) / 2),
-      string: jokerString(i, j, jmodifiers),
-      tooltip: (jokerTexts.length > i && jokerTexts[i].length > j) ? [jokerTexts[i][j][0], eval('`' + jokerTexts[i][j][1] + '`')] : ['WIP', 'WIP']
+      modifiers: {...state.jmodifiers},
+      value: state.jokerValue,
+      sell: sell !== false ? sell : Math.floor((jokerPrice[i][j] + ((state.jmodifiers.foil || state.jmodifiers.holographic || state.jmodifiers.polychrome) ? 1 : 0)) / 2),
+      string: jokerString(i, j, state.jmodifiers),
+      tooltip: (jokerTexts.length > i && jokerTexts[i].length > j) ? [jokerTexts[i][j][0], renderJokerText(jokerTexts[i][j][1])] : ['WIP', 'WIP']
     };
   }
 
-  jokerLimitDiv.innerText = Object.keys(playfieldJokers).length;
+  jokerLimitDiv.innerText = Object.keys(state.playfieldJokers).length;
 
-  if(Object.keys(playfieldJokers).length >= 8 && optimizeJokers) {
+  if(Object.keys(state.playfieldJokers).length >= 8 && state.optimizeJokers) {
     toggleJoker();
   }
 
@@ -701,35 +783,35 @@ function addJoker(i, j, sell = false) {
 }
 
 function removeJoker(id) {
-  delete playfieldJokers[id];
+  delete state.playfieldJokers[id];
 
-  jokerLimitDiv.innerText = Object.keys(playfieldJokers).length;
+  jokerLimitDiv.innerText = Object.keys(state.playfieldJokers).length;
 
   updateTooltips();
   redrawPlayfield();
 
-  changeTab(revertToTab)();
+  changeTab(state.revertToTab)();
 }
 
 function addCard(i, j) {
   for(let k = 0; k < cardCount; k++) {
-    let id = ((j === 10 && !modifiers.stone) ? (!modifiers.steel ? '993' : '992') : '') + (''+j).padStart(2, 0)+(4-i)+Object.keys(modifiers).map(a=>modifiers[a]?'1':'0').join('');
-    while(playfieldCards.hasOwnProperty(id)) {
+    let id = ((j === 10 && !state.modifiers.stone) ? (!state.modifiers.steel ? '993' : '992') : '') + (''+j).padStart(2, 0)+(4-i)+Object.keys(state.modifiers).map(a=>state.modifiers[a]?'1':'0').join('');
+    while(state.playfieldCards.hasOwnProperty(id)) {
       id += '#';
     }
 
-    playfieldCards[id] = {
+    state.playfieldCards[id] = {
       id,
       type: [(i + 3) % 4, j],
-      modifiers: {...modifiers},
+      modifiers: {...state.modifiers},
       string: cardString((i + 3) % 4, j, 1),
       HCString: cardString((i + 3) % 4, j, 2),
     };
   }
 
-  handLimitDiv.innerText = Object.keys(playfieldCards).length;
+  handLimitDiv.innerText = Object.keys(state.playfieldCards).length;
 
-  if(Object.keys(playfieldCards).length >= 9 && optimizeJokers) {
+  if(Object.keys(state.playfieldCards).length >= 9 && state.optimizeJokers) {
     toggleCard();
   }
 
@@ -737,13 +819,13 @@ function addCard(i, j) {
 }
 
 function removeCard(id) {
-  if(bestHand.indexOf(id) >= 0) {
-    bestHand.splice(bestHand.indexOf(id), 1);
+  if(state.bestHand.indexOf(id) >= 0) {
+    state.bestHand.splice(state.bestHand.indexOf(id), 1);
   }
 
-  delete playfieldCards[id];
+  delete state.playfieldCards[id];
 
-  handLimitDiv.innerText = Object.keys(playfieldCards).length;
+  handLimitDiv.innerText = Object.keys(state.playfieldCards).length;
 
   redrawPlayfield();
 }
@@ -756,13 +838,14 @@ function redrawPlayfieldHTML() {
   compileHand();
 
   let txt = '';
-  for(let id of bestJokers) {
-    txt += `<div class='tooltip'><div id="${id}" class="jokerCard${playfieldJokers[id].string} ` +
+  let ignoreCard = -1;
+  for(let id of state.bestJokers) {
+    txt += `<div class='tooltip'><div id="${id}" class="jokerCard${state.playfieldJokers[id].string} ` +
     `onclick="modifyJoker('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
     `<div class="removeJoker" onclick="removeJoker('${id}')">X</div>` +
     `<span class='tooltiptext'>` +
-    `<span class='title'>${playfieldJokers[id].tooltip[0]}</span>` +
-    `<span class='desc'><span class='descContent'>${playfieldJokers[id].tooltip[1]}</span></span>` +
+    `<span class='title'>${state.playfieldJokers[id].tooltip[0]}</span>` +
+    `<span class='desc'><span class='descContent'>${state.playfieldJokers[id].tooltip[1]}</span></span>` +
     `</span>` +
     `<div style="position: absolute; top: 100%; width: 100%;">` +
     `<div class="positionButtons">` +
@@ -775,9 +858,9 @@ function redrawPlayfieldHTML() {
   jokerAreaDiv.innerHTML = txt;
 
   txt = '';
-  for(let id of bestHand) {
+  for(let id of state.bestHand) {
     txt += `<div class="tooltip"><div id="p${id}" ` +
-    `class="playfieldCard${highContrast ? playfieldCards[id].HCString : playfieldCards[id].string} ` +
+    `class="playfieldCard${state.highContrast ? state.playfieldCards[id].HCString : state.playfieldCards[id].string} ` +
     `onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
     `<div style="position: absolute; top: 100%; width: 100%;">` +
     `<div class="positionButtons">` +
@@ -793,10 +876,10 @@ function redrawPlayfieldHTML() {
 
   let lowestCards = [];
 
-  for(let id of Object.keys(playfieldCards).sort().reverse()) {
-    if(bestHand.indexOf(id) >= 0) continue;
+  for(let id of Object.keys(state.playfieldCards).sort().reverse()) {
+    if(state.bestHand.indexOf(id) >= 0) continue;
     if(id.indexOf('99') !== 0) continue;
-    txt += `<div class="tooltip"><div id="${id}" class="playfieldCard${highContrast ? playfieldCards[id].HCString : playfieldCards[id].string} onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
+    txt += `<div class="tooltip"><div id="${id}" class="playfieldCard${state.highContrast ? state.playfieldCards[id].HCString : state.playfieldCards[id].string} onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
     `<div style="position: absolute; top: 100%; width: 100%;">` +
     `<div class="positionButtons">` +
     `<div class="lvlBtn" onclick="moveCardUp('${id}')">^</div>` +
@@ -805,19 +888,19 @@ function redrawPlayfieldHTML() {
   }
 
   // if Raised Fist, move the lowest cards to the left
-  if(Object.keys(playfieldJokers).reduce((a,b) => a || (playfieldJokers[b].type[0] === 2 && playfieldJokers[b].type[1] === 8 && !playfieldJokers[b].modifiers.disabled), false)) {
+  if(Object.keys(state.playfieldJokers).reduce((a,b) => a || (state.playfieldJokers[b].type[0] === 2 && state.playfieldJokers[b].type[1] === 8 && !state.playfieldJokers[b].modifiers.disabled), false)) {
     let lowest = 100;
     let isQueen = true;
     let type = 0;
-    for(let card in playfieldCards) {
-      if(!playfieldCards[card].modifiers.stone && bestHand.indexOf(card) < 0) {
-        if(lowest > cardValues[playfieldCards[card].type[1]] + (playfieldCards[card].type[1] === QUEEN ? 10 : 0)) {
-          isQueen = playfieldCards[card].type[1] === QUEEN;
-          lowest = cardValues[playfieldCards[card].type[1]] + (isQueen ? 10 : 0);
+    for(let card in state.playfieldCards) {
+      if(!state.playfieldCards[card].modifiers.stone && state.bestHand.indexOf(card) < 0) {
+        if(lowest > cardValues[state.playfieldCards[card].type[1]] + (state.playfieldCards[card].type[1] === QUEEN ? 10 : 0)) {
+          isQueen = state.playfieldCards[card].type[1] === QUEEN;
+          lowest = cardValues[state.playfieldCards[card].type[1]] + (isQueen ? 10 : 0);
           lowestCards = [card];
-          type = playfieldCards[card].type[1];
+          type = state.playfieldCards[card].type[1];
         }
-        else if(lowest === cardValues[playfieldCards[card].type[1]]) {
+        else if(lowest === cardValues[state.playfieldCards[card].type[1]]) {
           lowestCards.push(card);
         }
       }
@@ -827,12 +910,12 @@ function redrawPlayfieldHTML() {
     let highScore = 0;
     for(let i = 0; i < lowestCards.length; i++) {
       const card = lowestCards[i];
-      if(!playfieldCards[card].modifiers.disabled) {
+      if(!state.playfieldCards[card].modifiers.disabled) {
         let thisScore = 1;
-        if(playfieldCards[card].modifiers.steel) {
+        if(state.playfieldCards[card].modifiers.steel) {
           thisScore += 2;
         }
-        if(playfieldCards[card].modifiers.double) {
+        if(state.playfieldCards[card].modifiers.double) {
           thisScore += 4;
         }
         if(thisScore > highScore) {
@@ -848,11 +931,11 @@ function redrawPlayfieldHTML() {
     if(lowest > 0 && lowest < 100 && !isQueen) {
       ignoreCard = lowestCards[index];
 
-      for(let id of Object.keys(playfieldCards).sort().reverse()) {
+      for(let id of Object.keys(state.playfieldCards).sort().reverse()) {
         if(lowestCards.indexOf(id) < 0) continue;
         if(id === ignoreCard) continue;
         if(id.indexOf('99') === 0) continue;
-        txt += `<div class="tooltip"><div id="${id}" class="playfieldCard${highContrast ? playfieldCards[id].HCString : playfieldCards[id].string} onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
+        txt += `<div class="tooltip"><div id="${id}" class="playfieldCard${state.highContrast ? state.playfieldCards[id].HCString : state.playfieldCards[id].string} onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
         `<div style="position: absolute; top: 100%; width: 100%;">` +
         `<div class="positionButtons">` +
         `<div class="lvlBtn" onclick="moveCardUp('${id}')">^</div>` +
@@ -860,7 +943,7 @@ function redrawPlayfieldHTML() {
         `</div>`;
       }
 
-      txt += `<div class="tooltip"><div id="${ignoreCard}" class="playfieldCard${highContrast ? playfieldCards[ignoreCard].HCString : playfieldCards[ignoreCard].string} onclick="removeCard('${ignoreCard}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
+      txt += `<div class="tooltip"><div id="${ignoreCard}" class="playfieldCard${state.highContrast ? state.playfieldCards[ignoreCard].HCString : state.playfieldCards[ignoreCard].string} onclick="removeCard('${ignoreCard}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
       `<div style="position: absolute; top: 100%; width: 100%;">` +
       `<div class="positionButtons">` +
       `<div class="lvlBtn" onclick="moveCardUp('${ignoreCard}')">^</div>` +
@@ -870,11 +953,11 @@ function redrawPlayfieldHTML() {
     //console.log(txt);
   }
 
-  for(let id of Object.keys(playfieldCards).sort().reverse()) {
-    if(bestHand.indexOf(id) >= 0) continue;
+  for(let id of Object.keys(state.playfieldCards).sort().reverse()) {
+    if(state.bestHand.indexOf(id) >= 0) continue;
     if(lowestCards.indexOf(id) >= 0) continue;
     if(id.indexOf('99') === 0) continue;
-    txt += `<div class="tooltip"><div id="${id}" class="playfieldCard${highContrast ? playfieldCards[id].HCString : playfieldCards[id].string} onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
+    txt += `<div class="tooltip"><div id="${id}" class="playfieldCard${state.highContrast ? state.playfieldCards[id].HCString : state.playfieldCards[id].string} onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
     `<div style="position: absolute; top: 100%; width: 100%;">` +
     `<div class="positionButtons">` +
     `<div class="lvlBtn" onclick="moveCardUp('${id}')">^</div>` +
@@ -885,34 +968,34 @@ function redrawPlayfieldHTML() {
 }
 
 function moveJokerLeft(id) {
-  if(optimizeJokers) toggleJoker();
-  const index = bestJokers.indexOf(id);
+  if(state.optimizeJokers) toggleJoker();
+  const index = state.bestJokers.indexOf(id);
   if(index > 0) {
-    bestJokers.splice(index, 1);
-    bestJokers.splice(index - 1, 0, id);
+    state.bestJokers.splice(index, 1);
+    state.bestJokers.splice(index - 1, 0, id);
   }
   let newPlayfield = {};
-  for(joker of bestJokers) {
-    newPlayfield[joker] = playfieldJokers[joker];
+  for(const joker of state.bestJokers) {
+    newPlayfield[joker] = state.playfieldJokers[joker];
   }
-  playfieldJokers = newPlayfield;
+  state.playfieldJokers = newPlayfield;
   redrawPlayfield();
 }
 
 function moveJokerRight(id) {
-  let index = bestJokers.indexOf(id);
-  if(index < bestJokers.length) {
-    bestJokers.splice(index, 1);
-    bestJokers.splice(index + 1, 0, id);
+  let index = state.bestJokers.indexOf(id);
+  if(index < state.bestJokers.length) {
+    state.bestJokers.splice(index, 1);
+    state.bestJokers.splice(index + 1, 0, id);
   }
   let newPlayfield = {};
-  for(let i = 0; i < bestJokers.length; i++) {
-    let joker = bestJokers[i];
-    newPlayfield[joker] = playfieldJokers[joker];
+  for(let i = 0; i < state.bestJokers.length; i++) {
+    let joker = state.bestJokers[i];
+    newPlayfield[joker] = state.playfieldJokers[joker];
   }
-  playfieldJokers = newPlayfield;
+  state.playfieldJokers = newPlayfield;
 
-  if(optimizeJokers) {
+  if(state.optimizeJokers) {
     toggleJoker();
   }
   else {
@@ -921,34 +1004,34 @@ function moveJokerRight(id) {
 }
 
 function moveHandCardLeft(id) {
-  if(optimizeCards) toggleCard();
-  let index = bestHand.indexOf(id);
+  if(state.optimizeCards) toggleCard();
+  let index = state.bestHand.indexOf(id);
   if(index > 0) {
-    bestHand.splice(index, 1);
-    bestHand.splice(index - 1, 0, id);
+    state.bestHand.splice(index, 1);
+    state.bestHand.splice(index - 1, 0, id);
   }
   redrawPlayfield();
 }
 function moveHandCardRight(id) {
-  if(optimizeCards) toggleCard();
-  let index = bestHand.indexOf(id);
-  if(index < bestHand.length) {
-    bestHand.splice(index, 1);
-    bestHand.splice(index + 1, 0, id);
+  if(state.optimizeCards) toggleCard();
+  let index = state.bestHand.indexOf(id);
+  if(index < state.bestHand.length) {
+    state.bestHand.splice(index, 1);
+    state.bestHand.splice(index + 1, 0, id);
   }
   redrawPlayfield();
 }
 
 function moveHandCardDown(id) {
-  if(optimizeCards) toggleCard();
-  bestHand.splice(bestHand.indexOf(id), 1);
+  if(state.optimizeCards) toggleCard();
+  state.bestHand.splice(state.bestHand.indexOf(id), 1);
   redrawPlayfield();
 }
 
 function moveCardUp(id) {
-  if(optimizeCards) toggleCard();
-  if(bestHand.length < 5) {
-    bestHand.push(id);
+  if(state.optimizeCards) toggleCard();
+  if(state.bestHand.length < 5) {
+    state.bestHand.push(id);
   }
   redrawPlayfield();
 }
@@ -956,7 +1039,7 @@ function moveCardUp(id) {
 const searchDiv = document.getElementById('SearchVal');
 
 function searchJoker() {
-  searchVal = searchDiv.value;
+  state.searchVal = searchDiv.value;
   jredrawCards();
 }
 
@@ -964,11 +1047,11 @@ let modifyTab = changeTab(4);
 
 function modifyJoker(id) {
   modifyTab();
-  modifyingJoker = id;
-  modifyingJokerValDiv.innerText = playfieldJokers[modifyingJoker].value;
-  modifyingJokerSellValDiv.innerText = playfieldJokers[modifyingJoker].sell;
+  state.modifyingJoker = id;
+  modifyingJokerValDiv.innerText = state.playfieldJokers[state.modifyingJoker].value;
+  modifyingJokerSellValDiv.innerText = state.playfieldJokers[state.modifyingJoker].sell;
 
-  const type = playfieldJokers[modifyingJoker].type;
+  const type = state.playfieldJokers[state.modifyingJoker].type;
   if(jokerTexts[type[0]][type[1]][2]) {
     modifyingJokerValueDiv.style.display = 'inline-block';
     modifyingJokerValTxt.innerText = jokerTexts[type[0]][type[1]][2];
@@ -981,20 +1064,20 @@ function modifyJoker(id) {
 }
 
 function updateModifyingJoker() {
-  if(!playfieldJokers.hasOwnProperty(modifyingJoker)) return;
+  if(!state.playfieldJokers.hasOwnProperty(state.modifyingJoker)) return;
 
-  modifyJokerDiv.innerHTML = `<div><div class='tooltip'><div data-scale='2' class="jokerCard${playfieldJokers[modifyingJoker].string} onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
+  modifyJokerDiv.innerHTML = `<div><div class='tooltip'><div data-scale='2' class="jokerCard${state.playfieldJokers[state.modifyingJoker].string} onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
   `<span class='tooltiptext'>` +
-  `<span class='title'>${playfieldJokers[modifyingJoker].tooltip[0]}</span>` +
-  `<span class='desc'><span class='descContent'>${playfieldJokers[modifyingJoker].tooltip[1]}</span></span>` +
+  `<span class='title'>${state.playfieldJokers[state.modifyingJoker].tooltip[0]}</span>` +
+  `<span class='desc'><span class='descContent'>${state.playfieldJokers[state.modifyingJoker].tooltip[1]}</span></span>` +
   `</span>` +
   `</div></div>`;
 
 }
 
 function mjtoggleCardModifier(name) {
-  if(!modifyingJoker) return;
-  let joker = playfieldJokers[modifyingJoker];
+  if(!state.modifyingJoker) return;
+  let joker = state.playfieldJokers[state.modifyingJoker];
   if(('foil holographic polychrome disabled'.indexOf(name) >= 0) && !joker.modifiers[name]) {
     joker.modifiers.foil = false;
     joker.modifiers.holographic = false;
@@ -1011,25 +1094,25 @@ function mjtoggleCardModifier(name) {
 }
 
 function incrementModifyJokerValue(inc) {
-  if(!modifyingJoker) return;
-  let joker = playfieldJokers[modifyingJoker];
+  if(!state.modifyingJoker) return;
+  let joker = state.playfieldJokers[state.modifyingJoker];
   joker.value += inc;
   if(inc === 0) {
     joker.value = 0;
   }
   modifyingJokerValDiv.innerText = joker.value;
 
-  let tmp = jokerValue;
-  jokerValue = joker.value;
-  joker.tooltip[1] = (jokerTexts.length > joker.type[0] && jokerTexts[joker.type[0]].length > joker.type[1]) ? eval('`' + jokerTexts[joker.type[0]][joker.type[1]][1] + '`') : 'WIP'
-  jokerValue = tmp;
+  let tmp = state.jokerValue;
+  state.jokerValue = joker.value;
+  joker.tooltip[1] = (jokerTexts.length > joker.type[0] && jokerTexts[joker.type[0]].length > joker.type[1]) ? renderJokerText(jokerTexts[joker.type[0]][joker.type[1]][1]) : 'WIP'
+  state.jokerValue = tmp;
 
   redrawPlayfield();
   updateModifyingJoker();
 }
 
 function setModifyJokerValue() {
-  let joker = playfieldJokers[modifyingJoker];
+  let joker = state.playfieldJokers[state.modifyingJoker];
   let willBlur = false;
 
   if(modifyingJokerValDiv.innerText.indexOf('\n') >= 0) {
@@ -1044,10 +1127,10 @@ function setModifyJokerValue() {
     joker.value = 0;
   }
 
-  let tmp = jokerValue;
-  jokerValue = joker.value;
-  joker.tooltip[1] = (jokerTexts.length > joker.type[0] && jokerTexts[joker.type[0]].length > joker.type[1]) ? eval('`' + jokerTexts[joker.type[0]][joker.type[1]][1] + '`') : 'WIP'
-  jokerValue = tmp;
+  let tmp = state.jokerValue;
+  state.jokerValue = joker.value;
+  joker.tooltip[1] = (jokerTexts.length > joker.type[0] && jokerTexts[joker.type[0]].length > joker.type[1]) ? renderJokerText(jokerTexts[joker.type[0]][joker.type[1]][1]) : 'WIP'
+  state.jokerValue = tmp;
 
   if(willBlur) modifyingJokerValDiv.blur();
 
@@ -1056,8 +1139,8 @@ function setModifyJokerValue() {
 }
 
 function incrementModifyJokerSellValue(inc) {
-  if(!modifyingJoker) return;
-  let joker = playfieldJokers[modifyingJoker];
+  if(!state.modifyingJoker) return;
+  let joker = state.playfieldJokers[state.modifyingJoker];
   joker.sell += inc;
   if(inc === 0 || joker.sell < 0) {
     joker.sell = 0;
@@ -1069,7 +1152,7 @@ function incrementModifyJokerSellValue(inc) {
 }
 
 function setModifyJokerSellValue() {
-  let joker = playfieldJokers[modifyingJoker];
+  let joker = state.playfieldJokers[state.modifyingJoker];
   let willBlur = false;
 
   if(modifyingJokerSellValDiv.innerText.indexOf('\n') >= 0) {
@@ -1092,16 +1175,16 @@ function setModifyJokerSellValue() {
 
 
 function updateJokerValue(joker) {
-  let tmp = jokerValue;
-  jokerValue = joker.value;
+  let tmp = state.jokerValue;
+  state.jokerValue = joker.value;
   joker.string = jokerString(joker.type[0], joker.type[1], joker.modifiers);
-  joker.tooltip[1] = (jokerTexts.length > joker.type[0] && jokerTexts[joker.type[0]].length > joker.type[1]) ? eval('`' + jokerTexts[joker.type[0]][joker.type[1]][1] + '`') : 'WIP';
-  jokerValue = tmp;
+  joker.tooltip[1] = (jokerTexts.length > joker.type[0] && jokerTexts[joker.type[0]].length > joker.type[1]) ? renderJokerText(jokerTexts[joker.type[0]][joker.type[1]][1]) : 'WIP';
+  state.jokerValue = tmp;
 }
 
 function playHand() {
-  for(let j = 0; j < bestJokers.length; j++) {
-    const joker = playfieldJokers[bestJokers[j]];
+  for(let j = 0; j < state.bestJokers.length; j++) {
+    const joker = state.playfieldJokers[state.bestJokers[j]];
     if(joker.modifiers.disabled) continue;
     switch(''+joker.type[0]+joker.type[1]) {
       case '24':
@@ -1115,17 +1198,17 @@ function playHand() {
         break;
       case '40':
         // Wee Joker
-        if(bestHand.length === 4) {
+        if(state.bestHand.length === 4) {
           joker.value++;
         }
         break;
       case '61':
         // Ride the Bus
-        joker.value = tmpCompiledValues[j];
+        joker.value = state.lastCompiledValues[j];
         break;
       case '103':
         // Runner
-        if(tmpTypeOfHand === 3 || tmpTypeOfHand === 7) {
+        if(state.lastTypeOfHand === 3 || state.lastTypeOfHand === 7) {
           joker.value++;
         }
         break;
@@ -1141,7 +1224,7 @@ function playHand() {
         break;
       case '107':
         // Blue Joker
-        joker.value -= bestHand.length;
+        joker.value -= state.bestHand.length;
         break;
       case '112':
         // Green Joker
@@ -1149,17 +1232,17 @@ function playHand() {
         break;
       case '119':
         // Square Joker
-        if(bestHand.length === 4) {
+        if(state.bestHand.length === 4) {
           joker.value++;
         }
         break;
       case '122':
         // Vampire
-        joker.value = tmpCompiledValues[j];
+        joker.value = state.lastCompiledValues[j];
         break;
       case '129':
         // Obelisk
-        joker.value = tmpCompiledValues[j] * 5 - 5;
+        joker.value = state.lastCompiledValues[j] * 5 - 5;
         break;
       case '134':
         // Turtle Bean
@@ -1192,36 +1275,36 @@ function playHand() {
         break;
       case '154':
         // Spare Trousers
-        joker.value += tmpCompiledValues[j];
+        joker.value += state.lastCompiledValues[j];
         break;
     }
     updateJokerValue(joker);
   }
 
-  for(let c in playfieldCards) {
-    if(bestHand.indexOf(c) >= 0) {
-      delete playfieldCards[c];
+  for(let c in state.playfieldCards) {
+    if(state.bestHand.indexOf(c) >= 0) {
+      delete state.playfieldCards[c];
     }
   }
-  hands[tmpTypeOfHand].playedThisRound = 1;
-  handLevels.children[tmpTypeOfHand].children[0].innerText = 'X';
-  hands[tmpTypeOfHand].played++;
-  handLevels.children[tmpTypeOfHand].children[1].children[0].innerText = hands[tmpTypeOfHand].played;
+  hands[state.lastTypeOfHand].playedThisRound = 1;
+  handLevels.children[state.lastTypeOfHand].children[0].innerText = 'X';
+  hands[state.lastTypeOfHand].played++;
+  handLevels.children[state.lastTypeOfHand].children[1].children[0].innerText = hands[state.lastTypeOfHand].played;
 
-  bestHand = [];
+  state.bestHand = [];
 
   redrawPlayfield();
 
-  if(modifyingJoker) {
-    modifyJoker(modifyingJoker);
+  if(state.modifyingJoker) {
+    modifyJoker(state.modifyingJoker);
   }
 }
 
 function clearHand() {
-  playfieldCards = {};
-  bestHand = [];
+  state.playfieldCards = {};
+  state.bestHand = [];
 
-  handLimitDiv.innerText = Object.keys(playfieldCards).length;
+  handLimitDiv.innerText = Object.keys(state.playfieldCards).length;
 
   for(let i = 0; i < hands.length; i++) {
     hands[i].playedThisRound = 0;
@@ -1267,3 +1350,56 @@ function setupWheelHandlers() {
 }
 
 setupWheelHandlers();
+
+export {
+  addCard,
+  addJoker,
+  addLvlText,
+  clearHand,
+  incrementCardCount,
+  incrementJokerCount,
+  incrementJokerValue,
+  incrementLevel,
+  incrementModifyJokerSellValue,
+  incrementModifyJokerValue,
+  incrementPlanet,
+  invertPlayedHands,
+  jtoggleCardModifier,
+  mjtoggleCardModifier,
+  modifyJoker,
+  moveCardUp,
+  moveHandCardDown,
+  moveHandCardLeft,
+  moveHandCardRight,
+  moveJokerLeft,
+  moveJokerRight,
+  playHand,
+  redrawPlayfield,
+  redrawPlayfieldHTML,
+  removeCard,
+  removeJoker,
+  removeLvlText,
+  resetHand,
+  searchJoker,
+  selectAll,
+  setCardCount,
+  setJokerCount,
+  setJokerValue,
+  setLevel,
+  setModifierString,
+  setModifyJokerSellValue,
+  setModifyJokerValue,
+  setPlanet,
+  setPlayed,
+  toggleCard,
+  toggleCardModifier,
+  toggleJoker,
+  toggleMinimize,
+  toggleObservatory,
+  togglePlasma,
+  toggleTheEye,
+  toggleTheFlint,
+  togglePlayed,
+  updateModifyingJoker,
+  handLevels
+};

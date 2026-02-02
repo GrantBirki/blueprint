@@ -1,9 +1,11 @@
+---
+---
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
     <title>Balatro Calculator</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <meta name="description" content="Calculate the score of any Balatro hand">
     <meta name="keywords" content="Balatro, calculator, chips, score, multiplier, tool, joker, card, blueprint, mod, balatulator, balatrolator">
     <meta name="author" content="@EFHIII">
@@ -71,7 +73,7 @@
         </div>
         <div id="consumables" style="display: none"></div>
       </div>
-      <a href="https://discord.gg/ARHq4BbyjY"><img src="assets/Discord-Logo-Color.svg" style="height: 48px; position: relative"></a>
+      <a href="https://discord.gg/ARHq4BbyjY"><img src="/assets/Discord-Logo-Color.svg" style="height: 48px; position: relative"></a>
       <button type="button" class="resetBtn" onClick="playHand()">Play hand</button>
       <button type="button" class="resetBtn" onClick="clearHand()">Clear hand</button>
       <button type="button" class="resetBtn" onClick="resetHand()">Reset</button>
@@ -219,15 +221,12 @@
         </div>
       </div>
     </div><div id="footer">
-        <a href='https://www.playbalatro.com/' alt='Balatro Website'><img src='assets/Balatro logo-new.png' style='height: 3em;'></a><br>
+        <a href='https://www.playbalatro.com/' alt='Balatro Website'><img src='/assets/Balatro logo-new.png' style='height: 3em;'></a><br>
         <a href='https://www.github.com/EFHIII/balatro-calculator'>view code on GitHub</a>
     </div>
     <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="saffronhaas" data-description="Support me on Buy me a coffee!" data-message="" data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
-    <script type="text/javascript" src="hoverCard.js"></script>
-    <script type="text/javascript" src="cards.js"></script>
-    <script type="text/javascript" src="breakdown.js"></script>
-    <script type="text/javascript" src="manageWorkers.js"></script>
-    <script type="text/javascript" src="main.js"></script>
-    <script type="text/javascript" src="hand-url.js"></script>
+    <script type="module">
+      import "/src/runtime/index.ts";
+    </script>
   </body>
 </html>
