@@ -5,7 +5,7 @@ Blueprint is a static, browser-based Balatro calculator and deck builder. It is 
 
 ## User experience summary (from current site behavior)
 - Two-column layout: left run state (Jokers, hand, score), right tabs for Jokers, Cards, Hands, and Breakdown.
-- Optimization buttons (“Optimize Jokers (slow)” and “Optimize Hand (slow)”) toggle expensive search routines.
+- Optimization toggles live in Settings and control the expensive Joker/hand search routines.
 - Joker selection supports variants (foil, holographic, polychrome, disabled) with grid search and tooltips.
 - Card selection allows constructing an explicit 5-card hand and applying card modifiers.
 - Hands tab exposes per-hand levels, played counts, and a toggle to invert played-hand flags.
@@ -40,7 +40,7 @@ Blueprint is a static, browser-based Balatro calculator and deck builder. It is 
 - **Jokers**: Represented by type identifiers plus optional edition/variant (foil, holographic, polychrome, disabled). Joker order affects final scoring.
 - **Cards**: Standard 52-card deck plus modifiers (e.g., bonus, mult, wild, glass, steel, stone, gold, luck, seals).
 - **Hands**: Poker hands with levels, played counts, and base chips/mult values. Level upgrades affect base scoring.
-- **Run modifiers**: The Flint, Plasma Deck, The Eye, Observatory, and “Minimize Score” toggle.
+- **Run modifiers**: The Flint, Plasma Deck, The Eye, Observatory, and “Minimize Score” toggle (grouped in Settings).
 - **URL encoding**: State is serialized to a compact bitstream and encoded into query params (`h`/`hand`) for shareable links.
 
 ## Performance model

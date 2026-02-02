@@ -90,6 +90,7 @@ const toggleTheFlintDiv = document.getElementById('toggleTheFintBtn');
 const toggleTheEyeDiv = document.getElementById('toggleTheEyeBtn');
 const togglePlasmaDiv = document.getElementById('togglePlasmaBtn');
 const toggleObservatoryDiv = document.getElementById('toggleObservatoryBtn');
+const settingsModal = document.getElementById('settingsModal');
 
 function incrementLevel(inc, handIndex) {
   const hand = hands[handIndex];
@@ -330,6 +331,17 @@ function invertPlayedHands() {
   }
 
   redrawPlayfield();
+}
+
+function toggleSettings(next) {
+  if(!settingsModal) return;
+  const shouldOpen = typeof next === 'boolean' ? next : !settingsModal.classList.contains('is-open');
+  if(shouldOpen) {
+    settingsModal.classList.add('is-open');
+  }
+  else {
+    settingsModal.classList.remove('is-open');
+  }
 }
 
 const jokerValueHTML = document.getElementById('jokerVal');
@@ -1315,7 +1327,7 @@ function clearHand() {
 }
 
 function resetHand() {
-  window.location.replace('/balatro-calculator');
+  window.location.replace('/');
 }
 
 function setupWheelHandlers() {
@@ -1397,6 +1409,7 @@ export {
   toggleMinimize,
   toggleObservatory,
   togglePlasma,
+  toggleSettings,
   toggleTheEye,
   toggleTheFlint,
   togglePlayed,

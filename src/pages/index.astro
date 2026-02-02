@@ -15,29 +15,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0" />
     <script type="application/ld+json" src="path/to/structured-data.jsonld"></script>
   </head>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-4XT7X7MPCG"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-4XT7X7MPCG');
-  </script>
   <body>
     <div id="mainContainer">
       <div id="containerLeft">
-        <div class="toggleArea" style="margin-bottom: 1em">
-          <div id="toggleJoker" class="handLevel">
-            <span id="toggleJokerBtn" class="lvlBtn" onclick="toggleJoker()">X</span>
-            <span class="handName">Optimize Jokers (slow)</span>
-          </div>
-        </div>
-        <div class="toggleArea" style="margin-bottom: 1em">
-          <div id="toggleCard" class="handLevel">
-            <span id="toggleCardBtn" class="lvlBtn" onclick="toggleCard()">X</span>
-            <span class="handName">Optimize Hand (slow)</span>
-          </div>
-        </div>
         <div id="jokerArea"></div>
         <span class='limitText'><span id='jokerLimit'>0</span>/7</span><br>
         <div id="scoreOfPlay" style="font-size: 2em">
@@ -50,33 +30,11 @@
         <div id="bestPlay"></div>
         <div id="cardsInHand"></div>
         <span class='limitText'><span id='handLimit'>0</span>/8</span><br>
-        <div class="toggleArea" style="margin-bottom: 1em">
-        <div id="toggleMinimize" class="handLevel">
-          <span id="toggleMinimizeBtn" class="lvlBtn" onclick="toggleMinimize()">&nbsp;</span>
-          <span class="handName">Minimize Score</span>
-        </div>
-        <div id="toggleTheFlint" class="handLevel">
-          <span id="toggleTheFintBtn" class="lvlBtn" onclick="toggleTheFlint()">&nbsp;</span>
-          <span class="handName">The Flint</span>
-        </div>
-        <div id="toggleTheEye" class="handLevel">
-          <span id="toggleTheEyeBtn" class="lvlBtn" onclick="toggleTheEye()">&nbsp;</span>
-          <span class="handName">Can't play checked hands (The Eye)</span>
-        </div>
-        <div id="togglePlasma" class="handLevel">
-          <span id="togglePlasmaBtn" class="lvlBtn" onclick="togglePlasma()">&nbsp;</span>
-          <span class="handName">Plasma Deck</span>
-        </div>
-        <div id="toggleObservatory" class="handLevel">
-          <span id="toggleObservatoryBtn" class="lvlBtn" onclick="toggleObservatory()">&nbsp;</span>
-          <span class="handName">Observatory</span>
-        </div>
+        <button type="button" class="resetBtn" onClick="playHand()">Play hand</button>
+        <button type="button" class="resetBtn" onClick="clearHand()">Clear hand</button>
+        <button type="button" class="resetBtn" onClick="resetHand()">Reset</button>
+        <button type="button" class="resetBtn" onClick="toggleSettings()">Settings</button>
         <div id="consumables" style="display: none"></div>
-      </div>
-      <a href="https://discord.gg/ARHq4BbyjY"><img src="/assets/Discord-Logo-Color.svg" style="height: 48px; position: relative"></a>
-      <button type="button" class="resetBtn" onClick="playHand()">Play hand</button>
-      <button type="button" class="resetBtn" onClick="clearHand()">Clear hand</button>
-      <button type="button" class="resetBtn" onClick="resetHand()">Reset</button>
       </div><div id="containerRight">
         <div class="menuBtns">
           <span class="menuBtn" id="JokersBtn">Jokers</span><span class="menuBtn" id="CardsBtn">Cards</span><span class="menuBtn" id="HandsBtn">Hands</span><span class="menuBtn" id="BreakdownBtn">Breakdown</span><span class="menuBtn" id="ModifyJokerBtn" style="display: none;">Edit</span>
@@ -221,10 +179,50 @@
         </div>
       </div>
     </div><div id="footer">
-        <a href='https://www.playbalatro.com/' alt='Balatro Website'><img src='/assets/Balatro logo-new.png' style='height: 3em;'></a><br>
         <a href='https://www.github.com/EFHIII/balatro-calculator'>view code on GitHub</a>
     </div>
-    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="saffronhaas" data-description="Support me on Buy me a coffee!" data-message="" data-color="#40DCA5" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+    <div id="settingsModal" class="settingsModal" onclick="toggleSettings(false)">
+      <div class="settingsContent" onclick="event.stopPropagation()">
+        <div class="settingsHeader">
+          <span>Settings</span>
+          <button type="button" class="settingsClose" onclick="toggleSettings(false)">X</button>
+        </div>
+        <div class="settingsSection">
+          <div class="settingsTitle">Optimization</div>
+          <div id="toggleJoker" class="handLevel">
+            <span id="toggleJokerBtn" class="lvlBtn" onclick="toggleJoker()">X</span>
+            <span class="handName">Optimize Jokers (slow)</span>
+          </div>
+          <div id="toggleCard" class="handLevel">
+            <span id="toggleCardBtn" class="lvlBtn" onclick="toggleCard()">X</span>
+            <span class="handName">Optimize Hand (slow)</span>
+          </div>
+          <div id="toggleMinimize" class="handLevel">
+            <span id="toggleMinimizeBtn" class="lvlBtn" onclick="toggleMinimize()">&nbsp;</span>
+            <span class="handName">Minimize Score</span>
+          </div>
+        </div>
+        <div class="settingsSection">
+          <div class="settingsTitle">Decks</div>
+          <div id="toggleTheFlint" class="handLevel">
+            <span id="toggleTheFintBtn" class="lvlBtn" onclick="toggleTheFlint()">&nbsp;</span>
+            <span class="handName">The Flint</span>
+          </div>
+          <div id="toggleTheEye" class="handLevel">
+            <span id="toggleTheEyeBtn" class="lvlBtn" onclick="toggleTheEye()">&nbsp;</span>
+            <span class="handName">Can't play checked hands (The Eye)</span>
+          </div>
+          <div id="togglePlasma" class="handLevel">
+            <span id="togglePlasmaBtn" class="lvlBtn" onclick="togglePlasma()">&nbsp;</span>
+            <span class="handName">Plasma Deck</span>
+          </div>
+          <div id="toggleObservatory" class="handLevel">
+            <span id="toggleObservatoryBtn" class="lvlBtn" onclick="toggleObservatory()">&nbsp;</span>
+            <span class="handName">Observatory</span>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module">
       import "/src/runtime/index.ts";
     </script>
