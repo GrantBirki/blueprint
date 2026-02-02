@@ -382,6 +382,164 @@ function updateOptimizeIndicators() {
   }
 }
 
+let dragType = null;
+let dragId = null;
+
+function clearDragOver(container) {
+  if(!container) return;
+  const previous = container.querySelector('.drag-over');
+  if(previous) {
+    previous.classList.remove('drag-over');
+  }
+}
+
+function getDragTargetId(event, selector, dataKey) {
+  const target = event.target;
+  if(!target || !target.closest) return null;
+
+  const direct = target.closest(selector);
+  if(direct) {
+    return direct.dataset?.[dataKey] || direct.id || null;
+  }
+
+  const wrapper = target.closest('.tooltip');
+  if(wrapper) {
+    const card = wrapper.querySelector(selector);
+    if(card) {
+      return card.dataset?.[dataKey] || card.id || null;
+    }
+  }
+
+  return null;
+}
+
+function reorderByDrag(list, fromId, toId) {
+  const fromIndex = list.indexOf(fromId);
+  if(fromIndex < 0) return list;
+  let toIndex = toId ? list.indexOf(toId) : list.length - 1;
+  if(toIndex < 0) {
+    toIndex = list.length - 1;
+  }
+  if(fromIndex === toIndex) return list;
+  list.splice(fromIndex, 1);
+  list.splice(toIndex, 0, fromId);
+  return list;
+}
+
+function handleJokerDragStart(event) {
+  const id = getDragTargetId(event, '.jokerCard', 'jokerId');
+  if(!id) return;
+  dragType = 'joker';
+  dragId = id;
+  if(event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', id);
+  }
+}
+
+function handleJokerDragOver(event) {
+  if(dragType !== 'joker') return;
+  event.preventDefault();
+  if(event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+  const tooltip = event.target.closest('.tooltip');
+  if(!tooltip || !jokerAreaDiv.contains(tooltip)) {
+    clearDragOver(jokerAreaDiv);
+    return;
+  }
+  clearDragOver(jokerAreaDiv);
+  tooltip.classList.add('drag-over');
+}
+
+function handleJokerDrop(event) {
+  if(dragType !== 'joker') return;
+  event.preventDefault();
+  clearDragOver(jokerAreaDiv);
+  const targetId = getDragTargetId(event, '.jokerCard', 'jokerId');
+  markJokersDirty();
+  reorderByDrag(state.bestJokers, dragId, targetId);
+  const newPlayfield = {};
+  for(const joker of state.bestJokers) {
+    newPlayfield[joker] = state.playfieldJokers[joker];
+  }
+  state.playfieldJokers = newPlayfield;
+  if(state.optimizeJokers) {
+    toggleJoker();
+  }
+  else {
+    redrawPlayfield();
+  }
+  dragType = null;
+  dragId = null;
+}
+
+function handleCardDragStart(event) {
+  const id = getDragTargetId(event, '.playfieldCard', 'cardId');
+  if(!id) return;
+  dragType = 'card';
+  dragId = id;
+  if(event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', id);
+  }
+}
+
+function handleCardDragOver(event) {
+  if(dragType !== 'card') return;
+  event.preventDefault();
+  if(event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+  const tooltip = event.target.closest('.tooltip');
+  if(!tooltip || !bestPlayDiv.contains(tooltip)) {
+    clearDragOver(bestPlayDiv);
+    return;
+  }
+  clearDragOver(bestPlayDiv);
+  tooltip.classList.add('drag-over');
+}
+
+function handleCardDrop(event) {
+  if(dragType !== 'card') return;
+  event.preventDefault();
+  clearDragOver(bestPlayDiv);
+  const targetId = getDragTargetId(event, '.playfieldCard', 'cardId');
+  markCardsDirty();
+  reorderByDrag(state.bestHand, dragId, targetId);
+  if(state.optimizeCards) {
+    toggleCard();
+  }
+  else {
+    redrawPlayfield();
+  }
+  dragType = null;
+  dragId = null;
+}
+
+function setupDragAndDrop() {
+  if(jokerAreaDiv) {
+    jokerAreaDiv.addEventListener('dragstart', handleJokerDragStart);
+    jokerAreaDiv.addEventListener('dragover', handleJokerDragOver);
+    jokerAreaDiv.addEventListener('drop', handleJokerDrop);
+    jokerAreaDiv.addEventListener('dragend', () => {
+      dragType = null;
+      dragId = null;
+      clearDragOver(jokerAreaDiv);
+    });
+  }
+  if(bestPlayDiv) {
+    bestPlayDiv.addEventListener('dragstart', handleCardDragStart);
+    bestPlayDiv.addEventListener('dragover', handleCardDragOver);
+    bestPlayDiv.addEventListener('drop', handleCardDrop);
+    bestPlayDiv.addEventListener('dragend', () => {
+      dragType = null;
+      dragId = null;
+      clearDragOver(bestPlayDiv);
+    });
+  }
+}
+
 async function copyRunAsJson() {
   const bestPlayScoreDiv = document.getElementById('bestPlayScore');
   const bestPlayNameDiv = document.getElementById('bestPlayName');
@@ -996,7 +1154,7 @@ function redrawPlayfieldHTML() {
   let ignoreCard = -1;
   for(let id of state.bestJokers) {
     txt += `<div class='tooltip'><div id="${id}" class="jokerCard${state.playfieldJokers[id].string} ` +
-    `onclick="modifyJoker('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
+    `draggable="true" data-joker-id="${id}" onclick="modifyJoker('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
     `<div class="removeJoker" onclick="removeJoker('${id}')">X</div>` +
     `<span class='tooltiptext'>` +
     `<span class='title'>${state.playfieldJokers[id].tooltip[0]}</span>` +
@@ -1016,7 +1174,7 @@ function redrawPlayfieldHTML() {
   for(let id of state.bestHand) {
     txt += `<div class="tooltip"><div id="p${id}" ` +
     `class="playfieldCard${state.highContrast ? state.playfieldCards[id].HCString : state.playfieldCards[id].string} ` +
-    `onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
+    `draggable="true" data-card-id="${id}" onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
     `<div style="position: absolute; top: 100%; width: 100%;">` +
     `<div class="positionButtons">` +
     `<div class="lvlBtn" onclick="moveHandCardLeft('${id}')">&lt;</div>` +
@@ -1519,6 +1677,7 @@ function setupWheelHandlers() {
 
 setupWheelHandlers();
 updateOptimizeIndicators();
+setupDragAndDrop();
 
 export {
   addCard,

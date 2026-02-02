@@ -283,6 +283,22 @@ html {
   height: 100%;
 }
 
+#jokerArea .jokerCard,
+#bestPlay .playfieldCard {
+  cursor: grab;
+}
+
+#jokerArea .jokerCard:active,
+#bestPlay .playfieldCard:active {
+  cursor: grabbing;
+}
+
+.tooltip.drag-over {
+  outline: 2px solid #35bd87;
+  outline-offset: 4px;
+  border-radius: 0.4em;
+}
+
 #bestPlay {
   width: calc(100% - 1.5em);
   margin: 0.5em;
@@ -772,24 +788,27 @@ input {
 .jokerCard:hover + .removeJoker,
 .removeJoker:hover {
   visibility: visible;
-  top: -40%;
-  height: 60%;
   color: #fff;
 }
 
 .removeJoker {
   color: #fff0;
   background-color: #f00;
-  position: relative;
-  margin-left: 20%;
-  margin-right: 20%;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  margin: 0;
   border-radius: 5px;
   cursor: pointer;
   visibility: hidden;
-  height: 0%;
-  top: 20%;
   transition: 0.2s;
-  padding-top: 8px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 4;
 }
 
 #modifyJoker .tooltip {

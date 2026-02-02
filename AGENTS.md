@@ -8,6 +8,7 @@ Blueprint is a static, browser-based Balatro calculator and deck builder. It is 
 - Optimization toggles live in Settings and control the expensive Joker/hand search routines.
 - Joker selection supports variants (foil, holographic, polychrome, disabled) with grid search and tooltips.
 - Card selection allows constructing an explicit 5-card hand and applying card modifiers.
+- Jokers and played cards can be drag-reordered in the left play area (order impacts scoring).
 - Hands tab exposes per-hand levels, played counts, and a toggle to invert played-hand flags.
 - Breakdown tab shows a step-by-step scoring ledger for each Joker and the final chip/mult totals.
 - Run state is encoded into the URL query string so a configuration can be shared.
