@@ -2,6 +2,7 @@
 "use strict";
 
 import { hands } from "./data";
+import { chipc, multc, prodc, endc, probc, rankNames, suitNames } from "./cards";
 
 const handChips = [
   [160, 16, 50, 3],

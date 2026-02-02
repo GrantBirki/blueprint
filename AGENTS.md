@@ -46,10 +46,10 @@ Blueprint is a static, browser-based Balatro calculator and deck builder. It is 
 ## Performance model
 - Optimization is intentionally “slow” due to combinatorial search and is offloaded to workers.
 - UI responsiveness relies on keeping scoring updates on the main thread and heavy computation in workers.
+- Joker optimization falls back to sampled permutations when the permutation count is too large to avoid tab crashes.
 
 ## External integrations
-- Google Analytics tag included in `index.html`.
-- Discord invite link in the footer.
+- None (no analytics or third-party widgets included).
 
 ## Development workflow
 - Run the Astro dev server with `script/server` (requires Node from nodenv).
@@ -59,9 +59,9 @@ Blueprint is a static, browser-based Balatro calculator and deck builder. It is 
 - Node runtime is pinned via `.node-version` (use nodenv).
 
 ## Testing
-- Deno is used as the test runtime.
+- Deno is the test runtime for `script/test`.
 - Unit tests cover isolated, deterministic logic and runtime wrappers (e.g., hover transforms and URL encoding helpers).
-- Coverage reporting is enforced in `script/test`.
+- Coverage reporting is enforced in `script/test` via `deno coverage` + `test/coverage_check.js`.
 
 ## Where to start for changes
 - UI and layout changes: `src/pages/index.astro` and `public/style.css`.

@@ -18,7 +18,10 @@
   <body>
     <div id="mainContainer">
       <div id="containerLeft">
-        <div id="jokerArea"></div>
+        <div id="jokerAreaContainer" class="playArea">
+          <span id="optimizeJokersIndicator" class="optimizeIndicator" title="Optimize Jokers enabled">J</span>
+          <div id="jokerArea"></div>
+        </div>
         <span class='limitText'><span id='jokerLimit'>0</span>/7</span><br>
         <div id="scoreOfPlay" style="font-size: 2em">
           <div id="bestPlayName">High Card<span class="nameLvl"> lvl.1</span></div>
@@ -28,12 +31,15 @@
           </div>
         </div>
         <div id="bestPlay"></div>
-        <div id="cardsInHand"></div>
+        <div id="cardsInHandContainer" class="playArea">
+          <span id="optimizeCardsIndicator" class="optimizeIndicator" title="Optimize Hand enabled">H</span>
+          <div id="cardsInHand"></div>
+        </div>
         <span class='limitText'><span id='handLimit'>0</span>/8</span><br>
-        <button type="button" class="resetBtn" onClick="playHand()">Play hand</button>
-        <button type="button" class="resetBtn" onClick="clearHand()">Clear hand</button>
-        <button type="button" class="resetBtn" onClick="resetHand()">Reset</button>
-        <button type="button" class="resetBtn" onClick="toggleSettings()">Settings</button>
+        <button type="button" class="resetBtn" onclick="playHand()">Play hand</button>
+        <button type="button" class="resetBtn" onclick="clearHand()">Clear hand</button>
+        <button type="button" class="resetBtn" onclick="resetHand()">Reset</button>
+        <button type="button" class="resetBtn" onclick="toggleSettings()">Settings</button>
         <div id="consumables" style="display: none"></div>
       </div><div id="containerRight">
         <div class="menuBtns">
@@ -220,6 +226,11 @@
             <span id="toggleObservatoryBtn" class="lvlBtn" onclick="toggleObservatory()">&nbsp;</span>
             <span class="handName">Observatory</span>
           </div>
+        </div>
+        <div class="settingsSection">
+          <div class="settingsTitle">Testing</div>
+          <button type="button" class="settingsAction" onclick="copyRunAsJson()">Copy as JSON</button>
+          <div id="copyJsonStatus" class="settingsHint" aria-live="polite"></div>
         </div>
       </div>
     </div>

@@ -91,6 +91,9 @@ const toggleTheEyeDiv = document.getElementById('toggleTheEyeBtn');
 const togglePlasmaDiv = document.getElementById('togglePlasmaBtn');
 const toggleObservatoryDiv = document.getElementById('toggleObservatoryBtn');
 const settingsModal = document.getElementById('settingsModal');
+const optimizeJokersIndicator = document.getElementById('optimizeJokersIndicator');
+const optimizeCardsIndicator = document.getElementById('optimizeCardsIndicator');
+const copyJsonStatus = document.getElementById('copyJsonStatus');
 
 function incrementLevel(inc, handIndex) {
   const hand = hands[handIndex];
@@ -221,12 +224,30 @@ function toggleMinimize() {
   }
 }
 
+function markJokersDirty() {
+  if(state.optimizeJokersSnapshot) {
+    state.optimizeJokersDirty = true;
+  }
+}
+
+function markCardsDirty() {
+  if(state.optimizeCardsSnapshot) {
+    state.optimizeCardsDirty = true;
+  }
+}
+
 function toggleJoker() {
+  const wasEnabled = state.optimizeJokers;
   state.optimizeJokers = !state.optimizeJokers;
-  if(state.optimizeJokers) {
-    if(state.optimizeCards && (Object.keys(state.playfieldJokers).length >= 8 || Object.keys(state.playfieldCards).length >= 10)) {
-      toggleCard();
-    }
+  if(!wasEnabled && state.optimizeJokers) {
+    state.optimizeJokersSnapshot = state.bestJokers.slice();
+    state.optimizeJokersDirty = false;
+  }
+  if(wasEnabled && !state.optimizeJokers && state.optimizeJokersSnapshot && !state.optimizeJokersDirty) {
+    state.bestJokers = state.optimizeJokersSnapshot.slice();
+  }
+  if(!state.optimizeJokers) {
+    state.optimizeJokersSnapshot = null;
   }
   redrawPlayfield();
 
@@ -236,14 +257,21 @@ function toggleJoker() {
   else {
     toggleJokerDiv.innerHTML = '&nbsp;';
   }
+  updateOptimizeIndicators();
 }
 
 function toggleCard() {
+  const wasEnabled = state.optimizeCards;
   state.optimizeCards = !state.optimizeCards;
-  if(state.optimizeCards) {
-    if(state.optimizeJokers && (Object.keys(state.playfieldJokers).length >= 8 || Object.keys(state.playfieldCards).length >= 10)) {
-      toggleJoker();
-    }
+  if(!wasEnabled && state.optimizeCards) {
+    state.optimizeCardsSnapshot = state.bestHand.slice();
+    state.optimizeCardsDirty = false;
+  }
+  if(wasEnabled && !state.optimizeCards && state.optimizeCardsSnapshot && !state.optimizeCardsDirty) {
+    state.bestHand = state.optimizeCardsSnapshot.slice();
+  }
+  if(!state.optimizeCards) {
+    state.optimizeCardsSnapshot = null;
   }
   redrawPlayfield();
 
@@ -253,6 +281,7 @@ function toggleCard() {
   else {
     toggleCardDiv.innerHTML = '&nbsp;';
   }
+  updateOptimizeIndicators();
 }
 
 function togglePlasma() {
@@ -341,6 +370,124 @@ function toggleSettings(next) {
   }
   else {
     settingsModal.classList.remove('is-open');
+  }
+}
+
+function updateOptimizeIndicators() {
+  if(optimizeJokersIndicator) {
+    optimizeJokersIndicator.style.display = state.optimizeJokers ? 'flex' : 'none';
+  }
+  if(optimizeCardsIndicator) {
+    optimizeCardsIndicator.style.display = state.optimizeCards ? 'flex' : 'none';
+  }
+}
+
+async function copyRunAsJson() {
+  const bestPlayScoreDiv = document.getElementById('bestPlayScore');
+  const bestPlayNameDiv = document.getElementById('bestPlayName');
+  const scoreChipsDiv = document.getElementById('scoreChips');
+  const scoreMultDiv = document.getElementById('scoreMult');
+  const cardIds = Object.keys(state.playfieldCards);
+  const jokerIds = Object.keys(state.playfieldJokers);
+
+  const payload = {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    score: {
+      bestPlayName: bestPlayNameDiv ? bestPlayNameDiv.innerText : '',
+      bestPlayScore: bestPlayScoreDiv ? bestPlayScoreDiv.innerText : '',
+      scoreChips: scoreChipsDiv ? scoreChipsDiv.innerText : '',
+      scoreMult: scoreMultDiv ? scoreMultDiv.innerText : ''
+    },
+    settings: {
+      optimizeJokers: state.optimizeJokers,
+      optimizeCards: state.optimizeCards,
+      minimize: state.minimize,
+      optimizeMode: state.optimizeMode,
+      theFlint: state.theFlint,
+      theEye: state.theEye,
+      plasmaDeck: state.plasmaDeck,
+      observatory: state.observatory,
+      highContrast: state.highContrast
+    },
+    hands: hands.map(hand => ({
+      name: hand.name,
+      level: hand.level,
+      planets: hand.planets,
+      played: hand.played,
+      playedThisRound: hand.playedThisRound,
+      chips: hand.chips,
+      mult: hand.mult
+    })),
+    jokers: {
+      order: state.bestJokers.slice(),
+      all: jokerIds.reduce((acc, id) => {
+        acc[id] = {
+          type: state.playfieldJokers[id].type.slice(),
+          modifiers: { ...state.playfieldJokers[id].modifiers },
+          value: state.playfieldJokers[id].value,
+          sell: state.playfieldJokers[id].sell
+        };
+        return acc;
+      }, {})
+    },
+    cards: {
+      selected: state.bestHand.slice(),
+      inHand: cardIds.filter(id => state.bestHand.indexOf(id) === -1),
+      all: cardIds.reduce((acc, id) => {
+        acc[id] = {
+          type: state.playfieldCards[id].type.slice(),
+          modifiers: { ...state.playfieldCards[id].modifiers }
+        };
+        return acc;
+      }, {})
+    },
+    lastTypeOfHand: state.lastTypeOfHand,
+    lastCompiledValues: state.lastCompiledValues,
+    editor: {
+      cardCount,
+      jokerCount,
+      jokerValue: state.jokerValue,
+      modifiers: { ...state.modifiers },
+      jokerModifiers: { ...state.jmodifiers }
+    }
+  };
+
+  const json = JSON.stringify(payload, null, 2);
+  let copied = false;
+
+  try {
+    if(navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(json);
+      copied = true;
+    }
+  } catch (err) {
+    copied = false;
+  }
+
+  if(!copied) {
+    const textarea = document.createElement('textarea');
+    textarea.value = json;
+    textarea.setAttribute('readonly', 'true');
+    textarea.style.position = 'absolute';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      copied = document.execCommand('copy');
+    } catch (err) {
+      copied = false;
+    }
+    document.body.removeChild(textarea);
+  }
+
+  if(copyJsonStatus) {
+    copyJsonStatus.innerText = copied ? 'Copied JSON to clipboard.' : 'Unable to copy JSON.';
+    if(copied) {
+      setTimeout(() => {
+        if(copyJsonStatus) copyJsonStatus.innerText = '';
+      }, 2000);
+    }
   }
 }
 
@@ -767,6 +914,7 @@ function updateTooltips() {
 }
 
 function addJoker(i, j, sell = false) {
+  markJokersDirty();
   for(let k = 0; k < jokerCount; k++) {
     let id = 'j'+(Math.random()+'').slice(2);
     while(state.playfieldJokers.hasOwnProperty(id)) {
@@ -786,15 +934,12 @@ function addJoker(i, j, sell = false) {
 
   jokerLimitDiv.innerText = Object.keys(state.playfieldJokers).length;
 
-  if(Object.keys(state.playfieldJokers).length >= 8 && state.optimizeJokers) {
-    toggleJoker();
-  }
-
   updateTooltips();
   redrawPlayfield();
 }
 
 function removeJoker(id) {
+  markJokersDirty();
   delete state.playfieldJokers[id];
 
   jokerLimitDiv.innerText = Object.keys(state.playfieldJokers).length;
@@ -806,6 +951,7 @@ function removeJoker(id) {
 }
 
 function addCard(i, j) {
+  markCardsDirty();
   for(let k = 0; k < cardCount; k++) {
     let id = ((j === 10 && !state.modifiers.stone) ? (!state.modifiers.steel ? '993' : '992') : '') + (''+j).padStart(2, 0)+(4-i)+Object.keys(state.modifiers).map(a=>state.modifiers[a]?'1':'0').join('');
     while(state.playfieldCards.hasOwnProperty(id)) {
@@ -823,14 +969,11 @@ function addCard(i, j) {
 
   handLimitDiv.innerText = Object.keys(state.playfieldCards).length;
 
-  if(Object.keys(state.playfieldCards).length >= 9 && state.optimizeJokers) {
-    toggleCard();
-  }
-
   redrawPlayfield();
 }
 
 function removeCard(id) {
+  markCardsDirty();
   if(state.bestHand.indexOf(id) >= 0) {
     state.bestHand.splice(state.bestHand.indexOf(id), 1);
   }
@@ -980,6 +1123,7 @@ function redrawPlayfieldHTML() {
 }
 
 function moveJokerLeft(id) {
+  markJokersDirty();
   if(state.optimizeJokers) toggleJoker();
   const index = state.bestJokers.indexOf(id);
   if(index > 0) {
@@ -995,6 +1139,7 @@ function moveJokerLeft(id) {
 }
 
 function moveJokerRight(id) {
+  markJokersDirty();
   let index = state.bestJokers.indexOf(id);
   if(index < state.bestJokers.length) {
     state.bestJokers.splice(index, 1);
@@ -1016,6 +1161,7 @@ function moveJokerRight(id) {
 }
 
 function moveHandCardLeft(id) {
+  markCardsDirty();
   if(state.optimizeCards) toggleCard();
   let index = state.bestHand.indexOf(id);
   if(index > 0) {
@@ -1025,6 +1171,7 @@ function moveHandCardLeft(id) {
   redrawPlayfield();
 }
 function moveHandCardRight(id) {
+  markCardsDirty();
   if(state.optimizeCards) toggleCard();
   let index = state.bestHand.indexOf(id);
   if(index < state.bestHand.length) {
@@ -1035,12 +1182,14 @@ function moveHandCardRight(id) {
 }
 
 function moveHandCardDown(id) {
+  markCardsDirty();
   if(state.optimizeCards) toggleCard();
   state.bestHand.splice(state.bestHand.indexOf(id), 1);
   redrawPlayfield();
 }
 
 function moveCardUp(id) {
+  markCardsDirty();
   if(state.optimizeCards) toggleCard();
   if(state.bestHand.length < 5) {
     state.bestHand.push(id);
@@ -1089,6 +1238,7 @@ function updateModifyingJoker() {
 
 function mjtoggleCardModifier(name) {
   if(!state.modifyingJoker) return;
+  markJokersDirty();
   let joker = state.playfieldJokers[state.modifyingJoker];
   if(('foil holographic polychrome disabled'.indexOf(name) >= 0) && !joker.modifiers[name]) {
     joker.modifiers.foil = false;
@@ -1107,6 +1257,7 @@ function mjtoggleCardModifier(name) {
 
 function incrementModifyJokerValue(inc) {
   if(!state.modifyingJoker) return;
+  markJokersDirty();
   let joker = state.playfieldJokers[state.modifyingJoker];
   joker.value += inc;
   if(inc === 0) {
@@ -1125,6 +1276,7 @@ function incrementModifyJokerValue(inc) {
 
 function setModifyJokerValue() {
   let joker = state.playfieldJokers[state.modifyingJoker];
+  markJokersDirty();
   let willBlur = false;
 
   if(modifyingJokerValDiv.innerText.indexOf('\n') >= 0) {
@@ -1152,6 +1304,7 @@ function setModifyJokerValue() {
 
 function incrementModifyJokerSellValue(inc) {
   if(!state.modifyingJoker) return;
+  markJokersDirty();
   let joker = state.playfieldJokers[state.modifyingJoker];
   joker.sell += inc;
   if(inc === 0 || joker.sell < 0) {
@@ -1165,6 +1318,7 @@ function incrementModifyJokerSellValue(inc) {
 
 function setModifyJokerSellValue() {
   let joker = state.playfieldJokers[state.modifyingJoker];
+  markJokersDirty();
   let willBlur = false;
 
   if(modifyingJokerSellValDiv.innerText.indexOf('\n') >= 0) {
@@ -1195,6 +1349,7 @@ function updateJokerValue(joker) {
 }
 
 function playHand() {
+  markCardsDirty();
   for(let j = 0; j < state.bestJokers.length; j++) {
     const joker = state.playfieldJokers[state.bestJokers[j]];
     if(joker.modifiers.disabled) continue;
@@ -1313,6 +1468,7 @@ function playHand() {
 }
 
 function clearHand() {
+  markCardsDirty();
   state.playfieldCards = {};
   state.bestHand = [];
 
@@ -1362,6 +1518,7 @@ function setupWheelHandlers() {
 }
 
 setupWheelHandlers();
+updateOptimizeIndicators();
 
 export {
   addCard,
@@ -1405,6 +1562,7 @@ export {
   setPlayed,
   toggleCard,
   toggleCardModifier,
+  copyRunAsJson,
   toggleJoker,
   toggleMinimize,
   toggleObservatory,
