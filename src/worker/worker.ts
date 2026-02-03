@@ -147,8 +147,8 @@ function initialize(state) {
   cards = state.cards;
   jokers = state.jokers;
   optimizeCards = state.optimizeCards;
-  minimize = state.minimize;
-  optimizeMode = state.optimizeMode;
+  optimizeMode = typeof state.optimizeMode === 'number' ? state.optimizeMode : 0;
+  minimize = optimizeMode === 1 ? true : state.minimize;
   bestHand = state.bestHand;
   workerID = state.workerID;
 }
@@ -252,7 +252,7 @@ function run(jokers = [[]]) {
                   bestCardsInHand = thisHand.cardsInHand;
                   originalHand = thisOriginalHand;
                 }
-                if(thisScore[1] < bestScore[1] || (thisScore[1] === bestScore[1] && thisScore[0] < bestScore[0]) || (bestCards.length === 0 && thisHand.cards.length > 0) || (thisScore[1] === bestScore[1] && thisScore[0] === bestScore[0] && sameScore > bestSameScore)) {
+                if(thisScore[1] < bestScore[1] || (thisScore[1] === bestScore[1] && thisScore[0] < bestScore[0]) || (thisScore[1] === bestScore[1] && thisScore[0] === bestScore[0] && sameScore > bestSameScore)) {
                   bestScore = thisScore;
                   bestHighScore = thisHand.simulateBestHand();
                   bestSameScore = sameScore;
@@ -288,7 +288,7 @@ function run(jokers = [[]]) {
                   bestCardsInHand = thisHand.cardsInHand;
                   originalHand = thisOriginalHand;
                 }
-                if(thisScore[1] > bestScore[1] || (thisScore[1] === bestScore[1] && thisScore[0] > bestScore[0]) || (bestCards.length === 0 && thisHand.cards.length > 0) || (thisScore[1] === bestScore[1] && thisScore[0] === bestScore[0] && sameScore > bestSameScore)) {
+                if(thisScore[1] > bestScore[1] || (thisScore[1] === bestScore[1] && thisScore[0] > bestScore[0]) || (thisScore[1] === bestScore[1] && thisScore[0] === bestScore[0] && sameScore > bestSameScore)) {
                   bestScore = thisScore;
                   bestHighScore = thisHand.simulateBestHand();
                   bestSameScore = sameScore;

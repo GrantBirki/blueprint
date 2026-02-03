@@ -210,8 +210,12 @@
             <span id="toggleCardBtn" class="lvlBtn" onclick="toggleCard()">X</span>
             <span class="handName">Optimize Hand (slow)</span>
           </div>
-          <div id="toggleMinimize" class="handLevel">
-            <span id="toggleMinimizeBtn" class="lvlBtn" onclick="toggleMinimize()">&nbsp;</span>
+          <div id="toggleOptimizeMax" class="handLevel" title="Maximize the score produced by optimization (uses the worst-hand score when optimization is on).">
+            <span id="toggleOptimizeMaxBtn" class="lvlBtn" onclick="setOptimizeMode(0)">X</span>
+            <span class="handName">Maximize Score</span>
+          </div>
+          <div id="toggleOptimizeMin" class="handLevel" title="Minimize the score produced by optimization (uses the best-hand score when optimization is on).">
+            <span id="toggleOptimizeMinBtn" class="lvlBtn" onclick="setOptimizeMode(1)">&nbsp;</span>
             <span class="handName">Minimize Score</span>
           </div>
         </div>

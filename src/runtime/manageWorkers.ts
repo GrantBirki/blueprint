@@ -76,6 +76,7 @@ function terminateThreads() {
   const jokerKeys = optimizePass === "cards" ? state.bestJokers : Object.keys(state.playfieldJokers);
   jokerKeysForTask = jokerKeys.slice();
 
+  const minimizeMode = state.optimizeMode === 1;
   const payload = {
     cards: Object.keys(state.playfieldCards).map((a, index) => {
       return [
@@ -103,7 +104,7 @@ function terminateThreads() {
     Observatory: state.observatory,
     taskID,
     optimizeCards: passOptimizeCards,
-    minimize: state.minimize,
+    minimize: minimizeMode,
     optimizeMode: state.optimizeMode,
     bestHand: state.bestHand.map(a => {
       return Object.keys(state.playfieldCards).indexOf(a);
@@ -200,19 +201,6 @@ function workerMessage(msg) {
         tmpCompiledValues = msg.data[11];
       }
       else if(msg.data[1][1] === bestScore[1] && msg.data[1][0] === bestScore[0] && msg.data[10] < tmpBestID) {
-        bestScore = msg.data[1];
-        tmpBestJokers = msg.data[2];
-        tmpBestCards = msg.data[3];
-        tmpBestCardsInHand = msg.data[4];
-        tmpBestHighHand = msg.data[5];
-        tmpBestLowHand = msg.data[6];
-        tmpTypeOfHand = msg.data[7];
-        tmpMeanScore = msg.data[8];
-        tmpMedianScore = msg.data[9];
-        tmpBestID = msg.data[10];
-        tmpCompiledValues = msg.data[11];
-      }
-      else if(tmpBestCards.length === 0 && msg.data[3].length > 0) {
         bestScore = msg.data[1];
         tmpBestJokers = msg.data[2];
         tmpBestCards = msg.data[3];

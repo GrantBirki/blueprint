@@ -314,3 +314,23 @@ Deno.test("getTypeOfHand handles FourFingers and Shortcut variants", () => {
   hand.compileAll();
   assert(hand.typeOfHand >= 0 && hand.typeOfHand <= 11, "expected valid hand type with FourFingers or Shortcut");
 });
+
+Deno.test("simulate handles zero multiplier without NaN output", () => {
+  const hands = makeHands();
+  hands[11][0] = 0;
+
+  const hand = new Hand({
+    cards: [],
+    cardsInHand: [],
+    jokers: [],
+    hands,
+    TheFlint: false,
+    TheEye: false,
+    PlasmaDeck: false,
+    Observatory: false
+  });
+
+  hand.compileAll();
+  const result = hand.simulateBestHand();
+  assert(Number.isFinite(result[0]) && Number.isFinite(result[1]), "Expected finite score output");
+});

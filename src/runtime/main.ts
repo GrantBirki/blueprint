@@ -85,7 +85,8 @@ const handLevels = document.getElementById('hands');
 const consumables = document.getElementById('consumables');
 const toggleJokerDiv = document.getElementById('toggleJokerBtn');
 const toggleCardDiv = document.getElementById('toggleCardBtn');
-const minimizeDiv = document.getElementById('toggleMinimizeBtn');
+const optimizeMaxDiv = document.getElementById('toggleOptimizeMaxBtn');
+const optimizeMinDiv = document.getElementById('toggleOptimizeMinBtn');
 const toggleTheFlintDiv = document.getElementById('toggleTheFintBtn');
 const toggleTheEyeDiv = document.getElementById('toggleTheEyeBtn');
 const togglePlasmaDiv = document.getElementById('togglePlasmaBtn');
@@ -134,6 +135,8 @@ if(spectralToggles) {
     .join('');
   updateSpectralUI();
 }
+
+updateOptimizeModeUI();
 
 function incrementLevel(inc, handIndex) {
   const hand = hands[handIndex];
@@ -252,16 +255,20 @@ function addLvlText(handIndex) {
   div.children[2].innerText = 'lvl.'+hand.level;
 }
 
-function toggleMinimize() {
-  state.minimize = !state.minimize;
-  redrawPlayfield();
+function updateOptimizeModeUI() {
+  if(optimizeMaxDiv) {
+    optimizeMaxDiv.innerText = state.optimizeMode === 0 ? 'X' : '\u00a0';
+  }
+  if(optimizeMinDiv) {
+    optimizeMinDiv.innerText = state.optimizeMode === 1 ? 'X' : '\u00a0';
+  }
+}
 
-  if(state.minimize) {
-    minimizeDiv.innerText = 'X';
-  }
-  else {
-    minimizeDiv.innerHTML = '&nbsp;';
-  }
+function setOptimizeMode(mode) {
+  state.optimizeMode = mode;
+  state.minimize = mode === 1;
+  updateOptimizeModeUI();
+  redrawPlayfield();
 }
 
 function markJokersDirty() {
@@ -1779,7 +1786,7 @@ export {
   toggleCardModifier,
   copyRunAsJson,
   toggleJoker,
-  toggleMinimize,
+  setOptimizeMode,
   toggleObservatory,
   togglePlasma,
   toggleSpectral,

@@ -198,6 +198,9 @@ function bigBigTimes(a, b) {
 }
 
 function normalizeBig(b) {
+  if(!b || !Number.isFinite(b[0]) || !Number.isFinite(b[1]) || b[0] === 0) {
+    return [0, 0];
+  }
   const tempE = Math.floor(Math.log10(Math.abs(b[0])));
 
   return [
@@ -2114,7 +2117,7 @@ class Hand {
     this.jokersExtraValue = [];
 
     if(this.TheEye && this.hands[this.typeOfHand][PLAYED_THIS_ROUND]) {
-      return [...normalizeBig(bigTimes(0, 1)), 0, normalizeBig(1)];
+      return [0, 0, 0, [0, 0]];
     }
 
     for(let j = 0; j < this.jokers.length; j++) {
