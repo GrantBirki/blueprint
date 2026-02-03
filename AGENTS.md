@@ -5,9 +5,10 @@ Blueprint is a static, browser-based Balatro calculator and deck builder. It is 
 
 ## User experience summary (from current site behavior)
 - Two-column layout: left run state (Jokers, hand, score), right tabs for Jokers, Cards, Hands, and Breakdown.
-- Optimization buttons (“Optimize Jokers (slow)” and “Optimize Hand (slow)”) toggle expensive search routines.
+- Optimization toggles live in Settings and control the expensive Joker/hand search routines.
 - Joker selection supports variants (foil, holographic, polychrome, disabled) with grid search and tooltips.
 - Card selection allows constructing an explicit 5-card hand and applying card modifiers.
+- Jokers and played cards can be drag-reordered in the left play area (order impacts scoring).
 - Hands tab exposes per-hand levels, played counts, and a toggle to invert played-hand flags.
 - Breakdown tab shows a step-by-step scoring ledger for each Joker and the final chip/mult totals.
 - Run state is encoded into the URL query string so a configuration can be shared.
@@ -40,16 +41,16 @@ Blueprint is a static, browser-based Balatro calculator and deck builder. It is 
 - **Jokers**: Represented by type identifiers plus optional edition/variant (foil, holographic, polychrome, disabled). Joker order affects final scoring.
 - **Cards**: Standard 52-card deck plus modifiers (e.g., bonus, mult, wild, glass, steel, stone, gold, luck, seals).
 - **Hands**: Poker hands with levels, played counts, and base chips/mult values. Level upgrades affect base scoring.
-- **Run modifiers**: The Flint, Plasma Deck, The Eye, Observatory, and “Minimize Score” toggle.
+- **Run modifiers**: The Flint, Plasma Deck, The Eye, Observatory, and “Minimize Score” toggle (grouped in Settings).
 - **URL encoding**: State is serialized to a compact bitstream and encoded into query params (`h`/`hand`) for shareable links.
 
 ## Performance model
 - Optimization is intentionally “slow” due to combinatorial search and is offloaded to workers.
 - UI responsiveness relies on keeping scoring updates on the main thread and heavy computation in workers.
+- Joker optimization falls back to sampled permutations when the permutation count is too large to avoid tab crashes.
 
 ## External integrations
-- Google Analytics tag included in `index.html`.
-- Discord invite link in the footer.
+- None (no analytics or third-party widgets included).
 
 ## Development workflow
 - Run the Astro dev server with `script/server` (requires Node from nodenv).
@@ -59,9 +60,9 @@ Blueprint is a static, browser-based Balatro calculator and deck builder. It is 
 - Node runtime is pinned via `.node-version` (use nodenv).
 
 ## Testing
-- Deno is used as the test runtime.
+- Deno is the test runtime for `script/test`.
 - Unit tests cover isolated, deterministic logic and runtime wrappers (e.g., hover transforms and URL encoding helpers).
-- Coverage reporting is enforced in `script/test`.
+- Coverage reporting is enforced in `script/test` via `deno coverage` + `test/coverage_check.js`.
 
 ## Where to start for changes
 - UI and layout changes: `src/pages/index.astro` and `public/style.css`.

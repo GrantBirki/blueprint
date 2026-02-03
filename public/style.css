@@ -47,6 +47,84 @@ body {
   overflow-x: hidden;
 }
 
+.settingsModal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+}
+
+.settingsModal.is-open {
+  display: flex;
+}
+
+.settingsContent {
+  background-color: #3a5055;
+  box-shadow: 0 0.5em 0 #2b3b3f;
+  border-radius: 0.8em;
+  padding: 0.75em 1em 1em;
+  width: min(90vw, 34em);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.settingsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.4em;
+  margin-bottom: 0.5em;
+}
+
+.settingsClose {
+  background-color: #a3acb9;
+  border: none;
+  color: #1a2326;
+  font-family: 'm6x11Plus';
+  font-size: 0.9em;
+  padding: 0.25em 0.5em;
+  border-radius: 0.4em;
+  box-shadow: 0em 0.2em 0em #686e78;
+  cursor: pointer;
+}
+
+.settingsSection {
+  margin-top: 0.75em;
+}
+
+.settingsTitle {
+  text-align: left;
+  font-size: 1.1em;
+  margin-left: 0.5em;
+}
+
+.settingsAction {
+  margin: 0.5em 0.5em 0;
+  padding: 0.35em 0.75em;
+  background: #ff4d40;
+  color: #fff;
+  font-family: 'm6x11Plus';
+  font-size: 0.9em;
+  border: none;
+  border-radius: 0.4em;
+  box-shadow: 0em 0.2em 0em #a62f28;
+  cursor: pointer;
+}
+
+.settingsAction:hover {
+  background: #df2d20;
+}
+
+.settingsHint {
+  margin: 0.35em 0.6em 0;
+  font-size: 0.8em;
+  color: #cfe9d6;
+  min-height: 1em;
+}
+
 div {
   -webkit-tap-highlight-color: transparent !important;
 }
@@ -96,6 +174,7 @@ a:hover {
 
 html {
   overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 .handLevel {
@@ -171,21 +250,53 @@ html {
   width: 100%;
 }
 
-#jokerArea, #bestPlay, #cardsInHand {
+.playArea {
+  position: relative;
+  width: calc(100% - 1.5em);
+  background-color: #0003;
+  margin: 0.5em;
+  border-radius: 0.5em;
+  overflow: visible;
+}
+
+#jokerAreaContainer {
+  height: 110px;
+  padding: 12px 4px 4px;
+  margin-bottom: 2em;
+}
+
+#cardsInHandContainer {
+  height: 94px;
+  padding: 4px;
+  margin-bottom: 1em;
+}
+
+#jokerArea, #cardsInHand, #bestPlay {
   display: flex;
   gap: 0;
   grid-auto-columns: auto;
   justify-content: center;
 }
 
-#jokerArea {
-  width: calc(100% - 1.5em);
-  background-color: #0003;
-  margin: 0.5em;
-  height: 94px;
-  padding: 4px;
-  border-radius: 0.5em;
-  margin-bottom: 2em;
+#jokerArea, #cardsInHand {
+  width: 100%;
+  height: 100%;
+}
+
+#jokerArea .jokerCard,
+#bestPlay .playfieldCard {
+  cursor: grab;
+}
+
+#jokerArea .jokerCard:active,
+#bestPlay .playfieldCard:active {
+  cursor: grabbing;
+}
+
+.tooltip.drag-over {
+  outline: 2px solid #35bd87;
+  outline-offset: 4px;
+  border-radius: 0.4em;
 }
 
 #bestPlay {
@@ -197,13 +308,7 @@ html {
 }
 
 #cardsInHand {
-  background-color: #0003;
-  width: calc(100% - 1.5em);
-  margin: 0.5em;
-  height: 94px;
-  padding: 4px;
-  border-radius: 0.5em;
-  margin-bottom: 1em;
+  background-color: transparent;
 }
 
 .menuBtns {
@@ -683,24 +788,27 @@ input {
 .jokerCard:hover + .removeJoker,
 .removeJoker:hover {
   visibility: visible;
-  top: -40%;
-  height: 60%;
   color: #fff;
 }
 
 .removeJoker {
   color: #fff0;
   background-color: #f00;
-  position: relative;
-  margin-left: 20%;
-  margin-right: 20%;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  margin: 0;
   border-radius: 5px;
   cursor: pointer;
   visibility: hidden;
-  height: 0%;
-  top: 20%;
   transition: 0.2s;
-  padding-top: 8px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 4;
 }
 
 #modifyJoker .tooltip {
@@ -752,4 +860,24 @@ input {
 
 .resetBtn:hover {
   background-color: #df2d20;
+}
+
+.optimizeIndicator {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #35bd87;
+  color: #1a2326;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid #f6f8f9;
+  box-shadow: 0em 0.2em 0em #1f6f51, 0 0 0 2px #1a2326;
+  pointer-events: none;
+  z-index: 6;
 }

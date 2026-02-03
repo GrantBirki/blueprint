@@ -90,6 +90,10 @@ const toggleTheFlintDiv = document.getElementById('toggleTheFintBtn');
 const toggleTheEyeDiv = document.getElementById('toggleTheEyeBtn');
 const togglePlasmaDiv = document.getElementById('togglePlasmaBtn');
 const toggleObservatoryDiv = document.getElementById('toggleObservatoryBtn');
+const settingsModal = document.getElementById('settingsModal');
+const optimizeJokersIndicator = document.getElementById('optimizeJokersIndicator');
+const optimizeCardsIndicator = document.getElementById('optimizeCardsIndicator');
+const copyJsonStatus = document.getElementById('copyJsonStatus');
 
 function incrementLevel(inc, handIndex) {
   const hand = hands[handIndex];
@@ -220,12 +224,30 @@ function toggleMinimize() {
   }
 }
 
+function markJokersDirty() {
+  if(state.optimizeJokersSnapshot) {
+    state.optimizeJokersDirty = true;
+  }
+}
+
+function markCardsDirty() {
+  if(state.optimizeCardsSnapshot) {
+    state.optimizeCardsDirty = true;
+  }
+}
+
 function toggleJoker() {
+  const wasEnabled = state.optimizeJokers;
   state.optimizeJokers = !state.optimizeJokers;
-  if(state.optimizeJokers) {
-    if(state.optimizeCards && (Object.keys(state.playfieldJokers).length >= 8 || Object.keys(state.playfieldCards).length >= 10)) {
-      toggleCard();
-    }
+  if(!wasEnabled && state.optimizeJokers) {
+    state.optimizeJokersSnapshot = state.bestJokers.slice();
+    state.optimizeJokersDirty = false;
+  }
+  if(wasEnabled && !state.optimizeJokers && state.optimizeJokersSnapshot && !state.optimizeJokersDirty) {
+    state.bestJokers = state.optimizeJokersSnapshot.slice();
+  }
+  if(!state.optimizeJokers) {
+    state.optimizeJokersSnapshot = null;
   }
   redrawPlayfield();
 
@@ -235,14 +257,21 @@ function toggleJoker() {
   else {
     toggleJokerDiv.innerHTML = '&nbsp;';
   }
+  updateOptimizeIndicators();
 }
 
 function toggleCard() {
+  const wasEnabled = state.optimizeCards;
   state.optimizeCards = !state.optimizeCards;
-  if(state.optimizeCards) {
-    if(state.optimizeJokers && (Object.keys(state.playfieldJokers).length >= 8 || Object.keys(state.playfieldCards).length >= 10)) {
-      toggleJoker();
-    }
+  if(!wasEnabled && state.optimizeCards) {
+    state.optimizeCardsSnapshot = state.bestHand.slice();
+    state.optimizeCardsDirty = false;
+  }
+  if(wasEnabled && !state.optimizeCards && state.optimizeCardsSnapshot && !state.optimizeCardsDirty) {
+    state.bestHand = state.optimizeCardsSnapshot.slice();
+  }
+  if(!state.optimizeCards) {
+    state.optimizeCardsSnapshot = null;
   }
   redrawPlayfield();
 
@@ -252,6 +281,7 @@ function toggleCard() {
   else {
     toggleCardDiv.innerHTML = '&nbsp;';
   }
+  updateOptimizeIndicators();
 }
 
 function togglePlasma() {
@@ -330,6 +360,295 @@ function invertPlayedHands() {
   }
 
   redrawPlayfield();
+}
+
+function toggleSettings(next) {
+  if(!settingsModal) return;
+  const shouldOpen = typeof next === 'boolean' ? next : !settingsModal.classList.contains('is-open');
+  if(shouldOpen) {
+    settingsModal.classList.add('is-open');
+  }
+  else {
+    settingsModal.classList.remove('is-open');
+  }
+}
+
+function updateOptimizeIndicators() {
+  if(optimizeJokersIndicator) {
+    optimizeJokersIndicator.style.display = state.optimizeJokers ? 'flex' : 'none';
+  }
+  if(optimizeCardsIndicator) {
+    optimizeCardsIndicator.style.display = state.optimizeCards ? 'flex' : 'none';
+  }
+}
+
+let dragType = null;
+let dragId = null;
+
+function clearDragOver(container) {
+  if(!container) return;
+  const previous = container.querySelector('.drag-over');
+  if(previous) {
+    previous.classList.remove('drag-over');
+  }
+}
+
+function getDragTargetId(event, selector, dataKey) {
+  const target = event.target;
+  if(!target || !target.closest) return null;
+
+  const direct = target.closest(selector);
+  if(direct) {
+    return direct.dataset?.[dataKey] || direct.id || null;
+  }
+
+  const wrapper = target.closest('.tooltip');
+  if(wrapper) {
+    const card = wrapper.querySelector(selector);
+    if(card) {
+      return card.dataset?.[dataKey] || card.id || null;
+    }
+  }
+
+  return null;
+}
+
+function reorderByDrag(list, fromId, toId) {
+  const fromIndex = list.indexOf(fromId);
+  if(fromIndex < 0) return list;
+  let toIndex = toId ? list.indexOf(toId) : list.length - 1;
+  if(toIndex < 0) {
+    toIndex = list.length - 1;
+  }
+  if(fromIndex === toIndex) return list;
+  list.splice(fromIndex, 1);
+  list.splice(toIndex, 0, fromId);
+  return list;
+}
+
+function handleJokerDragStart(event) {
+  const id = getDragTargetId(event, '.jokerCard', 'jokerId');
+  if(!id) return;
+  dragType = 'joker';
+  dragId = id;
+  if(event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', id);
+  }
+}
+
+function handleJokerDragOver(event) {
+  if(dragType !== 'joker') return;
+  event.preventDefault();
+  if(event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+  const tooltip = event.target.closest('.tooltip');
+  if(!tooltip || !jokerAreaDiv.contains(tooltip)) {
+    clearDragOver(jokerAreaDiv);
+    return;
+  }
+  clearDragOver(jokerAreaDiv);
+  tooltip.classList.add('drag-over');
+}
+
+function handleJokerDrop(event) {
+  if(dragType !== 'joker') return;
+  event.preventDefault();
+  clearDragOver(jokerAreaDiv);
+  const targetId = getDragTargetId(event, '.jokerCard', 'jokerId');
+  markJokersDirty();
+  reorderByDrag(state.bestJokers, dragId, targetId);
+  const newPlayfield = {};
+  for(const joker of state.bestJokers) {
+    newPlayfield[joker] = state.playfieldJokers[joker];
+  }
+  state.playfieldJokers = newPlayfield;
+  if(state.optimizeJokers) {
+    toggleJoker();
+  }
+  else {
+    redrawPlayfield();
+  }
+  dragType = null;
+  dragId = null;
+}
+
+function handleCardDragStart(event) {
+  const id = getDragTargetId(event, '.playfieldCard', 'cardId');
+  if(!id) return;
+  dragType = 'card';
+  dragId = id;
+  if(event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', id);
+  }
+}
+
+function handleCardDragOver(event) {
+  if(dragType !== 'card') return;
+  event.preventDefault();
+  if(event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+  const tooltip = event.target.closest('.tooltip');
+  if(!tooltip || !bestPlayDiv.contains(tooltip)) {
+    clearDragOver(bestPlayDiv);
+    return;
+  }
+  clearDragOver(bestPlayDiv);
+  tooltip.classList.add('drag-over');
+}
+
+function handleCardDrop(event) {
+  if(dragType !== 'card') return;
+  event.preventDefault();
+  clearDragOver(bestPlayDiv);
+  const targetId = getDragTargetId(event, '.playfieldCard', 'cardId');
+  markCardsDirty();
+  reorderByDrag(state.bestHand, dragId, targetId);
+  if(state.optimizeCards) {
+    toggleCard();
+  }
+  else {
+    redrawPlayfield();
+  }
+  dragType = null;
+  dragId = null;
+}
+
+function setupDragAndDrop() {
+  if(jokerAreaDiv) {
+    jokerAreaDiv.addEventListener('dragstart', handleJokerDragStart);
+    jokerAreaDiv.addEventListener('dragover', handleJokerDragOver);
+    jokerAreaDiv.addEventListener('drop', handleJokerDrop);
+    jokerAreaDiv.addEventListener('dragend', () => {
+      dragType = null;
+      dragId = null;
+      clearDragOver(jokerAreaDiv);
+    });
+  }
+  if(bestPlayDiv) {
+    bestPlayDiv.addEventListener('dragstart', handleCardDragStart);
+    bestPlayDiv.addEventListener('dragover', handleCardDragOver);
+    bestPlayDiv.addEventListener('drop', handleCardDrop);
+    bestPlayDiv.addEventListener('dragend', () => {
+      dragType = null;
+      dragId = null;
+      clearDragOver(bestPlayDiv);
+    });
+  }
+}
+
+async function copyRunAsJson() {
+  const bestPlayScoreDiv = document.getElementById('bestPlayScore');
+  const bestPlayNameDiv = document.getElementById('bestPlayName');
+  const scoreChipsDiv = document.getElementById('scoreChips');
+  const scoreMultDiv = document.getElementById('scoreMult');
+  const cardIds = Object.keys(state.playfieldCards);
+  const jokerIds = Object.keys(state.playfieldJokers);
+  const pageUrl = window.location.href;
+
+  const payload = {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    pageUrl,
+    score: {
+      bestPlayName: bestPlayNameDiv ? bestPlayNameDiv.innerText : '',
+      bestPlayScore: bestPlayScoreDiv ? bestPlayScoreDiv.innerText : '',
+      scoreChips: scoreChipsDiv ? scoreChipsDiv.innerText : '',
+      scoreMult: scoreMultDiv ? scoreMultDiv.innerText : ''
+    },
+    settings: {
+      optimizeJokers: state.optimizeJokers,
+      optimizeCards: state.optimizeCards,
+      minimize: state.minimize,
+      optimizeMode: state.optimizeMode,
+      theFlint: state.theFlint,
+      theEye: state.theEye,
+      plasmaDeck: state.plasmaDeck,
+      observatory: state.observatory,
+      highContrast: state.highContrast
+    },
+    hands: hands.map(hand => ({
+      name: hand.name,
+      level: hand.level,
+      planets: hand.planets,
+      played: hand.played,
+      playedThisRound: hand.playedThisRound,
+      chips: hand.chips,
+      mult: hand.mult
+    })),
+    jokers: {
+      order: state.bestJokers.slice(),
+      all: jokerIds.reduce((acc, id) => {
+        acc[id] = {
+          type: state.playfieldJokers[id].type.slice(),
+          modifiers: { ...state.playfieldJokers[id].modifiers },
+          value: state.playfieldJokers[id].value,
+          sell: state.playfieldJokers[id].sell
+        };
+        return acc;
+      }, {})
+    },
+    cards: {
+      selected: state.bestHand.slice(),
+      inHand: cardIds.filter(id => state.bestHand.indexOf(id) === -1),
+      all: cardIds.reduce((acc, id) => {
+        acc[id] = {
+          type: state.playfieldCards[id].type.slice(),
+          modifiers: { ...state.playfieldCards[id].modifiers }
+        };
+        return acc;
+      }, {})
+    },
+    lastTypeOfHand: state.lastTypeOfHand,
+    lastCompiledValues: state.lastCompiledValues,
+    editor: {
+      cardCount,
+      jokerCount,
+      jokerValue: state.jokerValue,
+      modifiers: { ...state.modifiers },
+      jokerModifiers: { ...state.jmodifiers }
+    }
+  };
+
+  const json = JSON.stringify(payload, null, 2);
+  let copied = false;
+
+  try {
+    if(navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(json);
+      copied = true;
+    }
+  } catch (err) {
+    copied = false;
+  }
+
+  if(!copied) {
+    const textarea = document.createElement('textarea');
+    textarea.value = json;
+    textarea.setAttribute('readonly', 'true');
+    textarea.style.position = 'absolute';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      copied = document.execCommand('copy');
+    } catch (err) {
+      copied = false;
+    }
+    document.body.removeChild(textarea);
+  }
+
+  if(copyJsonStatus) {
+    copyJsonStatus.innerText = copied ? 'Copied JSON to clipboard.' : 'Unable to copy JSON.';
+    if(copied) {
+      setTimeout(() => {
+        if(copyJsonStatus) copyJsonStatus.innerText = '';
+      }, 2000);
+    }
+  }
 }
 
 const jokerValueHTML = document.getElementById('jokerVal');
@@ -755,6 +1074,7 @@ function updateTooltips() {
 }
 
 function addJoker(i, j, sell = false) {
+  markJokersDirty();
   for(let k = 0; k < jokerCount; k++) {
     let id = 'j'+(Math.random()+'').slice(2);
     while(state.playfieldJokers.hasOwnProperty(id)) {
@@ -774,15 +1094,12 @@ function addJoker(i, j, sell = false) {
 
   jokerLimitDiv.innerText = Object.keys(state.playfieldJokers).length;
 
-  if(Object.keys(state.playfieldJokers).length >= 8 && state.optimizeJokers) {
-    toggleJoker();
-  }
-
   updateTooltips();
   redrawPlayfield();
 }
 
 function removeJoker(id) {
+  markJokersDirty();
   delete state.playfieldJokers[id];
 
   jokerLimitDiv.innerText = Object.keys(state.playfieldJokers).length;
@@ -794,6 +1111,7 @@ function removeJoker(id) {
 }
 
 function addCard(i, j) {
+  markCardsDirty();
   for(let k = 0; k < cardCount; k++) {
     let id = ((j === 10 && !state.modifiers.stone) ? (!state.modifiers.steel ? '993' : '992') : '') + (''+j).padStart(2, 0)+(4-i)+Object.keys(state.modifiers).map(a=>state.modifiers[a]?'1':'0').join('');
     while(state.playfieldCards.hasOwnProperty(id)) {
@@ -811,14 +1129,11 @@ function addCard(i, j) {
 
   handLimitDiv.innerText = Object.keys(state.playfieldCards).length;
 
-  if(Object.keys(state.playfieldCards).length >= 9 && state.optimizeJokers) {
-    toggleCard();
-  }
-
   redrawPlayfield();
 }
 
 function removeCard(id) {
+  markCardsDirty();
   if(state.bestHand.indexOf(id) >= 0) {
     state.bestHand.splice(state.bestHand.indexOf(id), 1);
   }
@@ -841,7 +1156,7 @@ function redrawPlayfieldHTML() {
   let ignoreCard = -1;
   for(let id of state.bestJokers) {
     txt += `<div class='tooltip'><div id="${id}" class="jokerCard${state.playfieldJokers[id].string} ` +
-    `onclick="modifyJoker('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
+    `draggable="true" data-joker-id="${id}" onclick="modifyJoker('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
     `<div class="removeJoker" onclick="removeJoker('${id}')">X</div>` +
     `<span class='tooltiptext'>` +
     `<span class='title'>${state.playfieldJokers[id].tooltip[0]}</span>` +
@@ -861,7 +1176,7 @@ function redrawPlayfieldHTML() {
   for(let id of state.bestHand) {
     txt += `<div class="tooltip"><div id="p${id}" ` +
     `class="playfieldCard${state.highContrast ? state.playfieldCards[id].HCString : state.playfieldCards[id].string} ` +
-    `onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
+    `draggable="true" data-card-id="${id}" onclick="removeCard('${id}')" onmousemove = 'hoverCard(event)' onmouseout = 'noHoverCard(event)'></div>` +
     `<div style="position: absolute; top: 100%; width: 100%;">` +
     `<div class="positionButtons">` +
     `<div class="lvlBtn" onclick="moveHandCardLeft('${id}')">&lt;</div>` +
@@ -968,6 +1283,7 @@ function redrawPlayfieldHTML() {
 }
 
 function moveJokerLeft(id) {
+  markJokersDirty();
   if(state.optimizeJokers) toggleJoker();
   const index = state.bestJokers.indexOf(id);
   if(index > 0) {
@@ -983,6 +1299,7 @@ function moveJokerLeft(id) {
 }
 
 function moveJokerRight(id) {
+  markJokersDirty();
   let index = state.bestJokers.indexOf(id);
   if(index < state.bestJokers.length) {
     state.bestJokers.splice(index, 1);
@@ -1004,6 +1321,7 @@ function moveJokerRight(id) {
 }
 
 function moveHandCardLeft(id) {
+  markCardsDirty();
   if(state.optimizeCards) toggleCard();
   let index = state.bestHand.indexOf(id);
   if(index > 0) {
@@ -1013,6 +1331,7 @@ function moveHandCardLeft(id) {
   redrawPlayfield();
 }
 function moveHandCardRight(id) {
+  markCardsDirty();
   if(state.optimizeCards) toggleCard();
   let index = state.bestHand.indexOf(id);
   if(index < state.bestHand.length) {
@@ -1023,12 +1342,14 @@ function moveHandCardRight(id) {
 }
 
 function moveHandCardDown(id) {
+  markCardsDirty();
   if(state.optimizeCards) toggleCard();
   state.bestHand.splice(state.bestHand.indexOf(id), 1);
   redrawPlayfield();
 }
 
 function moveCardUp(id) {
+  markCardsDirty();
   if(state.optimizeCards) toggleCard();
   if(state.bestHand.length < 5) {
     state.bestHand.push(id);
@@ -1077,6 +1398,7 @@ function updateModifyingJoker() {
 
 function mjtoggleCardModifier(name) {
   if(!state.modifyingJoker) return;
+  markJokersDirty();
   let joker = state.playfieldJokers[state.modifyingJoker];
   if(('foil holographic polychrome disabled'.indexOf(name) >= 0) && !joker.modifiers[name]) {
     joker.modifiers.foil = false;
@@ -1095,6 +1417,7 @@ function mjtoggleCardModifier(name) {
 
 function incrementModifyJokerValue(inc) {
   if(!state.modifyingJoker) return;
+  markJokersDirty();
   let joker = state.playfieldJokers[state.modifyingJoker];
   joker.value += inc;
   if(inc === 0) {
@@ -1113,6 +1436,7 @@ function incrementModifyJokerValue(inc) {
 
 function setModifyJokerValue() {
   let joker = state.playfieldJokers[state.modifyingJoker];
+  markJokersDirty();
   let willBlur = false;
 
   if(modifyingJokerValDiv.innerText.indexOf('\n') >= 0) {
@@ -1140,6 +1464,7 @@ function setModifyJokerValue() {
 
 function incrementModifyJokerSellValue(inc) {
   if(!state.modifyingJoker) return;
+  markJokersDirty();
   let joker = state.playfieldJokers[state.modifyingJoker];
   joker.sell += inc;
   if(inc === 0 || joker.sell < 0) {
@@ -1153,6 +1478,7 @@ function incrementModifyJokerSellValue(inc) {
 
 function setModifyJokerSellValue() {
   let joker = state.playfieldJokers[state.modifyingJoker];
+  markJokersDirty();
   let willBlur = false;
 
   if(modifyingJokerSellValDiv.innerText.indexOf('\n') >= 0) {
@@ -1183,6 +1509,7 @@ function updateJokerValue(joker) {
 }
 
 function playHand() {
+  markCardsDirty();
   for(let j = 0; j < state.bestJokers.length; j++) {
     const joker = state.playfieldJokers[state.bestJokers[j]];
     if(joker.modifiers.disabled) continue;
@@ -1301,6 +1628,7 @@ function playHand() {
 }
 
 function clearHand() {
+  markCardsDirty();
   state.playfieldCards = {};
   state.bestHand = [];
 
@@ -1315,7 +1643,7 @@ function clearHand() {
 }
 
 function resetHand() {
-  window.location.replace('/balatro-calculator');
+  window.location.replace('/');
 }
 
 function setupWheelHandlers() {
@@ -1350,6 +1678,8 @@ function setupWheelHandlers() {
 }
 
 setupWheelHandlers();
+updateOptimizeIndicators();
+setupDragAndDrop();
 
 export {
   addCard,
@@ -1393,10 +1723,12 @@ export {
   setPlayed,
   toggleCard,
   toggleCardModifier,
+  copyRunAsJson,
   toggleJoker,
   toggleMinimize,
   toggleObservatory,
   togglePlasma,
+  toggleSettings,
   toggleTheEye,
   toggleTheFlint,
   togglePlayed,

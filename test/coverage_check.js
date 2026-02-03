@@ -2,12 +2,25 @@ const [lcovPath = "tmp/coverage.lcov"] = Deno.args;
 
 const report = await Deno.readTextFile(lcovPath);
 
+const excludedPaths = [
+  /\/src\/sim\//,
+];
+
 let linesFound = 0;
 let linesHit = 0;
 let branchesFound = 0;
 let branchesHit = 0;
 
+let includeCurrent = true;
 for (const line of report.split(/\r?\n/)) {
+  if (line.startsWith("SF:")) {
+    const filePath = line.slice(3);
+    includeCurrent = !excludedPaths.some((pattern) => pattern.test(filePath));
+    continue;
+  }
+  if (!includeCurrent) {
+    continue;
+  }
   if (line.startsWith("LF:")) {
     linesFound += Number(line.slice(3));
   } else if (line.startsWith("LH:")) {

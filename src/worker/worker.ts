@@ -56,6 +56,68 @@ function permutations(inputArr) {
   return permute(inputArr);
 }
 
+const factorialCache = [1];
+function factorial(n) {
+  if (n < factorialCache.length) {
+    return factorialCache[n];
+  }
+  let ans = factorialCache[factorialCache.length - 1];
+  for (let i = factorialCache.length; i <= n; i++) {
+    ans *= i;
+    if (ans > Number.MAX_SAFE_INTEGER) {
+      ans = Number.MAX_SAFE_INTEGER;
+      factorialCache[i] = ans;
+      return ans;
+    }
+    factorialCache[i] = ans;
+  }
+  return ans;
+}
+
+function permutationByIndex(items, index) {
+  const pool = items.slice();
+  const result = [];
+  let n = pool.length;
+  let k = index;
+
+  while (n > 0) {
+    const f = factorial(n - 1);
+    const idx = Math.floor(k / f);
+    k = k % f;
+    result.push(pool.splice(idx, 1)[0]);
+    n -= 1;
+  }
+
+  return result;
+}
+
+function permutationsByRange(items, start, end) {
+  const total = factorial(items.length);
+  const safeStart = Math.max(0, Math.min(total, start));
+  const safeEnd = Math.max(safeStart, Math.min(total, end));
+  const result = [];
+
+  for (let i = safeStart; i < safeEnd; i++) {
+    result.push(permutationByIndex(items, i));
+  }
+
+  return result;
+}
+
+function permutationsByStride(items, start, end, step) {
+  const total = factorial(items.length);
+  const safeStart = Math.max(0, Math.min(total, start));
+  const safeEnd = Math.max(safeStart, Math.min(total, end));
+  const safeStep = Math.max(1, step);
+  const result = [];
+
+  for (let i = safeStart; i < safeEnd; i += safeStep) {
+    result.push(permutationByIndex(items, i));
+  }
+
+  return result;
+}
+
 let taskID;
 let workerID;
 let thisHand;
@@ -312,7 +374,6 @@ function run(jokers = [[]]) {
 
   thisHand.jokers = bestJokers.map(a => a.slice());
   thisHand.cards = bestCards.slice();
-  console.log(originalHand);
   thisHand.cardsInHand = originalHand.slice();
 
 
@@ -364,8 +425,10 @@ self.onmessage = async function(msg) {
       run([jokers]);
       break;
     case "optimizeJokers":
-      let permuted = permutations(jokers);
-      run(permuted.slice(msg.data[1], msg.data[2]));
+      run(permutationsByRange(jokers, msg.data[1], msg.data[2]));
+      break;
+    case "optimizeJokersSample":
+      run(permutationsByStride(jokers, msg.data[1], msg.data[2], msg.data[3]));
       break;
     default:
   }

@@ -7,6 +7,8 @@ import { numberWithCommas, bigNumberWithCommas } from "./format";
 import { redrawPlayfieldHTML } from "./main";
 
 const THREADS = navigator.hardwareConcurrency;
+const MAX_JOKER_PERMUTATIONS = 200000;
+const MAX_JOKER_SAMPLES = 50000;
 
 const threads = [];
 
@@ -71,6 +73,9 @@ function terminateThreads() {
     threads[i].terminate();
   }
 
+  const jokerKeys = optimizePass === "cards" ? state.bestJokers : Object.keys(state.playfieldJokers);
+  jokerKeysForTask = jokerKeys.slice();
+
   const payload = {
     cards: Object.keys(state.playfieldCards).map((a, index) => {
       return [
@@ -97,13 +102,13 @@ function terminateThreads() {
     PlasmaDeck: state.plasmaDeck,
     Observatory: state.observatory,
     taskID,
-    optimizeCards: state.optimizeCards,
+    optimizeCards: passOptimizeCards,
     minimize: state.minimize,
     optimizeMode: state.optimizeMode,
     bestHand: state.bestHand.map(a => {
       return Object.keys(state.playfieldCards).indexOf(a);
     }),
-    jokers: Object.keys(state.playfieldJokers).map((a, index) => {
+    jokers: jokerKeys.map((a, index) => {
       return [
         state.playfieldJokers[a].type[0] * 10 + state.playfieldJokers[a].type[1],
         state.playfieldJokers[a].value,
@@ -119,7 +124,12 @@ function terminateThreads() {
   breakdownHand.TheEye = state.theEye;
   breakdownHand.PlasmaDeck = state.plasmaDeck;
   breakdownHand.Observatory = state.observatory;
-  breakdownHand.hands = hands;
+  breakdownHand.hands = hands.map(hand => ([
+    hand.level,
+    hand.planets,
+    hand.played,
+    hand.playedThisRound
+  ]));
 
   for(let i = 0; i < THREADS; i++) {
     threads[i] = new Worker(new URL('../worker/worker.ts', import.meta.url), { type: 'module' });
@@ -139,6 +149,11 @@ let tmpCompiledValues;
 
 let tmpMeanScore;
 let tmpMedianScore;
+let optimizePass = null;
+let optimizeBoth = false;
+let passOptimizeJokers = false;
+let passOptimizeCards = false;
+let jokerKeysForTask = [];
 
 function workerMessage(msg) {
   if(msg.data[0] === taskID) {
@@ -254,13 +269,21 @@ function workerMessage(msg) {
     }
     if(tasks === 0) {
       state.bestJokers = tmpBestJokers.map(a => {
-        return Object.keys(state.playfieldJokers)[a[5]];
+        return jokerKeysForTask[a[5]];
       });
       state.bestHand = tmpBestCards.map(a => {
         return Object.keys(state.playfieldCards)[a[7]];
       });
       state.lastTypeOfHand = tmpTypeOfHand;
       state.lastCompiledValues = tmpCompiledValues;
+
+      if(optimizeBoth && optimizePass === "jokers") {
+        calculator("cards");
+        return;
+      }
+
+      optimizePass = null;
+      optimizeBoth = false;
 
       if(tmpBestHighHand[0] === tmpBestLowHand[0] && tmpBestHighHand[1] === tmpBestLowHand[1]) {
         bestPlayScoreDiv.innerHTML = chipIcon + bigNumberWithCommas(tmpBestHighHand, true);
@@ -339,12 +362,27 @@ function factorial(n) {
   let ans = 1;
   for(let i = 2; i <= n; i++) {
     ans *= i;
+    if(ans > Number.MAX_SAFE_INTEGER) {
+      return Number.MAX_SAFE_INTEGER;
+    }
   }
   return ans;
 }
 
-function calculator() {
+function calculator(nextPass = null) {
   document.body.style.cursor = 'wait';
+
+  if(nextPass) {
+    optimizeBoth = true;
+    optimizePass = nextPass;
+  }
+  else {
+    optimizeBoth = state.optimizeJokers && state.optimizeCards;
+    optimizePass = optimizeBoth ? "jokers" : "final";
+  }
+
+  passOptimizeJokers = state.optimizeJokers && optimizePass !== "cards";
+  passOptimizeCards = state.optimizeCards && optimizePass !== "jokers";
 
   tmpBestCards = [];
   tmpBestHighHand = [0, 0, 0, 0, 0];
@@ -365,20 +403,36 @@ function calculator() {
     threads[0].postMessage(['once']);
     tasks = 1;
   }
-  else if(!state.optimizeJokers) {
+  else if(!passOptimizeJokers) {
     threads[0].postMessage(['dontOptimizeJokers']);
     tasks = 1;
   }
   else {
-    let possibleJokers = factorial(Object.keys(state.playfieldJokers).length);
-    let tasksPerThread = Math.ceil(possibleJokers / THREADS);
+    const jokerCount = Object.keys(state.playfieldJokers).length;
+    const possibleJokers = factorial(jokerCount);
 
-    for(let i = 0; i < THREADS; i++) {
-      threads[i].postMessage(['optimizeJokers', i * tasksPerThread, (i + 1) * tasksPerThread]);
-      tasks++;
-      possibleJokers -= tasksPerThread;
-      if(possibleJokers <= 0) {
-        break;
+    if(possibleJokers <= MAX_JOKER_PERMUTATIONS) {
+      let tasksPerThread = Math.ceil(possibleJokers / THREADS);
+
+      for(let i = 0; i < THREADS; i++) {
+        threads[i].postMessage(['optimizeJokers', i * tasksPerThread, (i + 1) * tasksPerThread]);
+        tasks++;
+        if((i + 1) * tasksPerThread >= possibleJokers) {
+          break;
+        }
+      }
+    }
+    else {
+      const stride = Math.max(1, Math.ceil(possibleJokers / MAX_JOKER_SAMPLES));
+      const step = stride * THREADS;
+
+      for(let i = 0; i < THREADS; i++) {
+        const start = i * stride;
+        if(start >= possibleJokers) {
+          break;
+        }
+        threads[i].postMessage(['optimizeJokersSample', start, possibleJokers, step]);
+        tasks++;
       }
     }
   }
