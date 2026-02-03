@@ -6,8 +6,34 @@ LCOV_FILE="tmp/coverage.lcov"
 
 rm -rf "$COVERAGE_DIR" "$LCOV_FILE"
 
-deno test --allow-read="." --coverage="$COVERAGE_DIR"
+deno test --allow-read="." --coverage="$COVERAGE_DIR" --reporter=dot --no-check \
+  | awk 'BEGIN{dotline=0}
+  {
+    line = $0;
+    gsub(/\x1B\[[0-9;]*[mK]/, "", line);
+    if (line ~ /^\|/) next;
+    if (line == ".") {
+      printf "%s", $0;
+      dotline = 1;
+      next;
+    }
+    if (dotline) {
+      printf "\n";
+      dotline = 0;
+    }
+    print $0;
+  }
+  END {
+    if (dotline) {
+      printf "\n";
+    }
+  }'
 
-deno coverage --lcov --output="$LCOV_FILE" "$COVERAGE_DIR"
+coverage_err="$COVERAGE_DIR/coverage.err"
+if ! deno coverage --quiet --lcov --output="$LCOV_FILE" "$COVERAGE_DIR" > /dev/null 2> "$coverage_err"; then
+  cat "$coverage_err"
+  exit 1
+fi
+rm -f "$coverage_err"
 
 deno run --allow-read="." "test/coverage_check.js" "$LCOV_FILE"
