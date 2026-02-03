@@ -3,12 +3,7 @@
 import { state } from "./state";
 import { hands, handColors } from "./data";
 import { Hand, normalizeBig } from "./breakdown";
-import {
-  numberWithCommas,
-  bigNumberWithCommas,
-  formatCompactNumber,
-  formatCompactBig
-} from "./format";
+import { numberWithCommas, bigNumberWithCommas } from "./format";
 import { redrawPlayfieldHTML } from "./main";
 
 const THREADS = navigator.hardwareConcurrency;
@@ -291,31 +286,17 @@ function workerMessage(msg) {
       optimizeBoth = false;
 
       if(tmpBestHighHand[0] === tmpBestLowHand[0] && tmpBestHighHand[1] === tmpBestLowHand[1]) {
-        const bestScoreFull = bigNumberWithCommas(tmpBestHighHand, true);
-        const bestScoreShort = formatCompactBig(tmpBestHighHand);
-        bestPlayScoreDiv.innerHTML = `${chipIcon}<span title="${bestScoreFull}">${bestScoreShort}</span>`;
+        bestPlayScoreDiv.innerHTML = chipIcon + bigNumberWithCommas(tmpBestHighHand, true);
         bestPlayNameDiv.innerHTML = hands[tmpTypeOfHand].name + `<span class="nameLvl" style="color: ${hands[tmpTypeOfHand].level === 1 ? handColors[0] : handColors[((Math.ceil(Math.abs(hands[tmpTypeOfHand].level)/6)*6+hands[tmpTypeOfHand].level+4)%6)+1]}"> lvl.${hands[tmpTypeOfHand].level}</span>`;
-        scoreChipsDiv.innerText = formatCompactNumber(tmpBestLowHand[2]);
-        scoreChipsDiv.title = numberWithCommas(tmpBestLowHand[2]);
-        scoreMultDiv.innerText = formatCompactBig(tmpBestLowHand[3]);
-        scoreMultDiv.title = bigNumberWithCommas(tmpBestLowHand[3]);
+        scoreChipsDiv.innerText = numberWithCommas(tmpBestLowHand[2]);
+        scoreMultDiv.innerText = bigNumberWithCommas(tmpBestLowHand[3]);
       }
       else {
-        const lowScoreFull = bigNumberWithCommas(tmpBestLowHand, true);
-        const highScoreFull = bigNumberWithCommas(tmpBestHighHand, true);
-        const lowScoreShort = formatCompactBig(tmpBestLowHand);
-        const highScoreShort = formatCompactBig(tmpBestHighHand);
-        const meanFull = bigNumberWithCommas(tmpMeanScore, true);
-        const medianFull = bigNumberWithCommas(tmpMedianScore, true);
-        const meanShort = formatCompactBig(tmpMeanScore);
-        const medianShort = formatCompactBig(tmpMedianScore);
-        bestPlayScoreDiv.innerHTML = `<span title="${lowScoreFull}">${lowScoreShort}</span> &lt; ${chipIcon}&lt; <span title="${highScoreFull}">${highScoreShort}</span>`;
-        bestPlayScoreDiv.innerHTML += `<br><span class="EV">Long-term EV</span> <span title="${meanFull}">${meanShort}</span><br><span class="EV">Short-term EV</span> <span title="${medianFull}">${medianShort}</span><br>`;
+        bestPlayScoreDiv.innerHTML = bigNumberWithCommas(tmpBestLowHand, true) + ' &lt;' + chipIcon + '&lt; ' + bigNumberWithCommas(tmpBestHighHand, true);
+        bestPlayScoreDiv.innerHTML += `<br><span class="EV">Long-term EV</span> ${bigNumberWithCommas(tmpMeanScore, true)}<br><span class="EV">Short-term EV</span> ${bigNumberWithCommas(tmpMedianScore, true)}<br>`;
         bestPlayNameDiv.innerHTML = hands[tmpTypeOfHand].name + `<span class="nameLvl" style="color: ${hands[tmpTypeOfHand].level === 1 ? handColors[0] : handColors[((Math.ceil(Math.abs(hands[tmpTypeOfHand].level)/6)*6+hands[tmpTypeOfHand].level+4)%6)+1]}"> lvl.${hands[tmpTypeOfHand].level}</span>`;
-        scoreChipsDiv.innerText = '>' + formatCompactNumber(tmpBestLowHand[2]);
-        scoreChipsDiv.title = numberWithCommas(tmpBestLowHand[2]);
-        scoreMultDiv.innerText = '>' + formatCompactBig(tmpBestLowHand[3]);
-        scoreMultDiv.title = bigNumberWithCommas(tmpBestLowHand[3]);
+        scoreChipsDiv.innerText = '>' + numberWithCommas(tmpBestLowHand[2]);
+        scoreMultDiv.innerText = '>' + bigNumberWithCommas(tmpBestLowHand[3]);
       }
 
       redrawPlayfieldHTML();
@@ -358,12 +339,9 @@ function updateBreakdown(breakdown) {
       breakdownCards = '<div class="tooltip"></div>';
     }
     if(line.chips !== previousChips || line.mult[0] !== previousMult[0] || line.mult[1] !== previousMult[1]) {
-      const normalizedMult = normalizeBig(line.mult);
-      const chipsFull = numberWithCommas(line.chips);
-      const multFull = bigNumberWithCommas(normalizedMult);
       breakdownScore = `<div class="levelStat">` +
-        `<span id="scoreChips" class="levelStatB" title="${chipsFull}">${formatCompactNumber(line.chips)}</span>X` +
-        `<span id="scoreMult" class="levelStatR" title="${multFull}">${formatCompactBig(normalizedMult)}</span>` +
+        `<span id="scoreChips" class="levelStatB">${numberWithCommas(line.chips)}</span>X` +
+        `<span id="scoreMult" class="levelStatR">${bigNumberWithCommas(normalizeBig(line.mult))}</span>` +
         `</div>`;
         previousChips = line.chips;
         previousMult = line.mult;
