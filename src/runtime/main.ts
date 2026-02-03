@@ -547,10 +547,12 @@ async function copyRunAsJson() {
   const scoreMultDiv = document.getElementById('scoreMult');
   const cardIds = Object.keys(state.playfieldCards);
   const jokerIds = Object.keys(state.playfieldJokers);
+  const pageUrl = window.location.href;
 
   const payload = {
     version: 1,
     generatedAt: new Date().toISOString(),
+    pageUrl,
     score: {
       bestPlayName: bestPlayNameDiv ? bestPlayNameDiv.innerText : '',
       bestPlayScore: bestPlayScoreDiv ? bestPlayScoreDiv.innerText : '',
