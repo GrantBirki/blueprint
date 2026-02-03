@@ -124,7 +124,12 @@ function terminateThreads() {
   breakdownHand.TheEye = state.theEye;
   breakdownHand.PlasmaDeck = state.plasmaDeck;
   breakdownHand.Observatory = state.observatory;
-  breakdownHand.hands = hands;
+  breakdownHand.hands = hands.map(hand => ([
+    hand.level,
+    hand.planets,
+    hand.played,
+    hand.playedThisRound
+  ]));
 
   for(let i = 0; i < THREADS; i++) {
     threads[i] = new Worker(new URL('../worker/worker.ts', import.meta.url), { type: 'module' });
