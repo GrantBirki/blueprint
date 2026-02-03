@@ -53,6 +53,7 @@ Blueprint is a static, browser-based Balatro calculator and deck builder. It is 
 - None (no analytics or third-party widgets included).
 
 ## Development workflow
+- **Required:** run `script/test` before every change.
 - Run the Astro dev server with `script/server` (requires Node from nodenv).
 - Build static output with `script/build` (Astro output in `dist/`).
 - `script/lint` is still a placeholder.

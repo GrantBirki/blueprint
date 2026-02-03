@@ -81,13 +81,6 @@ function changeTab(tab) {
 
 changeTab(0)();
 
-if(spectralToggles) {
-  spectralToggles.innerHTML = spectralCards
-    .map((item) => `<button type="button" class="spectralToggle" data-spectral="${item.id}" onclick="toggleSpectral('${item.id}')">${item.label}</button>`)
-    .join('');
-  updateSpectralUI();
-}
-
 const handLevels = document.getElementById('hands');
 const consumables = document.getElementById('consumables');
 const toggleJokerDiv = document.getElementById('toggleJokerBtn');
@@ -132,6 +125,13 @@ function updateSpectralUI() {
 function toggleSpectral(id) {
   if(!state.spectral || !(id in state.spectral)) return;
   state.spectral[id] = !state.spectral[id];
+  updateSpectralUI();
+}
+
+if(spectralToggles) {
+  spectralToggles.innerHTML = spectralCards
+    .map((item) => `<button type="button" class="spectralToggle" data-spectral="${item.id}" onclick="toggleSpectral('${item.id}')">${item.label}</button>`)
+    .join('');
   updateSpectralUI();
 }
 
