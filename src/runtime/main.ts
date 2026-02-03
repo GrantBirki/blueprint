@@ -98,6 +98,7 @@ const copyJsonStatus = document.getElementById('copyJsonStatus');
 const spectralToggles = document.getElementById('spectralToggles');
 const spectralCount = document.getElementById('spectralCount');
 const settingsCloseButton = settingsModal ? settingsModal.querySelector('.settingsClose') : null;
+const SETTINGS_STORAGE_KEY = 'blueprint-settings-v1';
 
 const spectralCards = [
   { id: 'ankh', label: 'Ankh' },
@@ -123,10 +124,35 @@ function updateSpectralUI() {
   spectralCount.innerText = `${enabled}/${spectralCards.length}`;
 }
 
+function getStoredSettings() {
+  if(typeof window === 'undefined' || !window.localStorage) return null;
+  const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+  if(!raw) return null;
+  try {
+    return JSON.parse(raw);
+  }
+  catch (error) {
+    return null;
+  }
+}
+
+function persistSettings() {
+  if(typeof window === 'undefined' || !window.localStorage) return;
+  const payload = {
+    optimizeJokers: state.optimizeJokers,
+    optimizeCards: state.optimizeCards,
+    optimizeMode: state.optimizeMode,
+    spectral: { ...state.spectral },
+    highContrast: state.highContrast
+  };
+  window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+}
+
 function toggleSpectral(id) {
   if(!state.spectral || !(id in state.spectral)) return;
   state.spectral[id] = !state.spectral[id];
   updateSpectralUI();
+  persistSettings();
 }
 
 if(spectralToggles) {
@@ -269,6 +295,33 @@ function setOptimizeMode(mode) {
   state.minimize = mode === 1;
   updateOptimizeModeUI();
   redrawPlayfield();
+  persistSettings();
+}
+
+function applyStoredSettings() {
+  const stored = getStoredSettings();
+  if(!stored) return;
+
+  if(typeof stored.optimizeJokers === 'boolean' && stored.optimizeJokers !== state.optimizeJokers) {
+    toggleJoker();
+  }
+  if(typeof stored.optimizeCards === 'boolean' && stored.optimizeCards !== state.optimizeCards) {
+    toggleCard();
+  }
+  if(typeof stored.optimizeMode === 'number' && stored.optimizeMode !== state.optimizeMode) {
+    setOptimizeMode(stored.optimizeMode);
+  }
+  if(stored.spectral && typeof stored.spectral === 'object') {
+    for(const item of spectralCards) {
+      if(Object.prototype.hasOwnProperty.call(stored.spectral, item.id)) {
+        state.spectral[item.id] = Boolean(stored.spectral[item.id]);
+      }
+    }
+    updateSpectralUI();
+  }
+  if(typeof stored.highContrast === 'boolean' && stored.highContrast !== state.highContrast) {
+    toggleContrast();
+  }
 }
 
 function markJokersDirty() {
@@ -305,6 +358,7 @@ function toggleJoker() {
     toggleJokerDiv.innerHTML = '&nbsp;';
   }
   updateOptimizeIndicators();
+  persistSettings();
 }
 
 function toggleCard() {
@@ -329,6 +383,7 @@ function toggleCard() {
     toggleCardDiv.innerHTML = '&nbsp;';
   }
   updateOptimizeIndicators();
+  persistSettings();
 }
 
 function togglePlasma() {
@@ -1767,6 +1822,7 @@ export {
   playHand,
   redrawPlayfield,
   redrawPlayfieldHTML,
+  applyStoredSettings,
   removeCard,
   removeJoker,
   removeLvlText,

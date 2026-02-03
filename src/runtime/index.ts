@@ -4,6 +4,7 @@ import {
   addCard,
   addJoker,
   addLvlText,
+  applyStoredSettings,
   copyRunAsJson,
   clearHand,
   incrementCardCount,
@@ -127,3 +128,5 @@ initHandUrl({
   toggleObservatory,
   handLevels
 });
+
+applyStoredSettings();
