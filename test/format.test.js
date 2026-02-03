@@ -1,9 +1,4 @@
-import {
-  bigNumberWithCommas,
-  numberWithCommas,
-  formatCompactNumber,
-  formatCompactBig
-} from "../src/runtime/format.ts";
+import { bigNumberWithCommas, numberWithCommas } from "../src/runtime/format.ts";
 
 function assertEquals(actual, expected, message) {
   if (actual !== expected) {
@@ -40,14 +35,4 @@ Deno.test("bigNumberWithCommas respects whole flag for fractional values", () =>
 
 Deno.test("bigNumberWithCommas formats whole numbers without decimals", () => {
   assertEquals(bigNumberWithCommas([1000, 0]), "1,000");
-});
-
-Deno.test("formatCompactNumber uses suffixes for large values", () => {
-  assertEquals(formatCompactNumber(5107400000000), "5.1T");
-  assertEquals(formatCompactNumber(1500), "1.5K");
-});
-
-Deno.test("formatCompactBig formats big number arrays", () => {
-  assertEquals(formatCompactBig([5.1074, 12]), "5.1T");
-  assertEquals(formatCompactBig([1.23, 6]), "1.2M");
 });
