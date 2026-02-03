@@ -3,6 +3,6 @@ import {
   hoverCard,
   noHoverCard,
   transforms
-} from "../logic/hoverCard";
+} from "../logic/hoverCard.ts";
 
 export { DEFAULT_CONSTRAIN, hoverCard, noHoverCard, transforms };
