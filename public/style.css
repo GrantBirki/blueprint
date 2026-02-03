@@ -47,6 +47,10 @@ body {
   overflow-x: hidden;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 .settingsModal {
   position: fixed;
   inset: 0;
@@ -209,15 +213,22 @@ html {
     #containerLeft {
       width: 50%;
       text-align: center;
+      position: sticky;
+      top: 0;
+      max-height: 100vh;
+      overflow-y: auto;
+      align-self: flex-start;
     }
 
     #containerRight {
       width: 50%;
+      min-height: 100vh;
     }
 
     #mainContainer {
       display: flex;
       min-height: 100%;
+      align-items: flex-start;
     }
 
     #footer {
@@ -257,6 +268,64 @@ html {
   margin: 0.5em;
   border-radius: 0.5em;
   overflow: visible;
+}
+
+.spectralSection {
+  background-color: #0003;
+  margin: 0.5em;
+  border-radius: 0.5em;
+  padding: 0.5em 0.7em;
+  text-align: center;
+}
+
+.spectralHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.1em;
+  margin-bottom: 0.4em;
+}
+
+.spectralTitle {
+  color: #cfe7ff;
+}
+
+.spectralCount {
+  background-color: #2b3b3f;
+  color: #fff;
+  padding: 0.1em 0.45em;
+  border-radius: 0.4em;
+  font-size: 0.9em;
+}
+
+.spectralToggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  justify-content: center;
+}
+
+.spectralToggle {
+  background-color: #5f7377;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.85em;
+  border: 2px solid #374244;
+  border-radius: 0.4em;
+  padding: 0.2em 0.5em;
+  cursor: pointer;
+  box-shadow: 0em 0.15em 0em #2b3b3f;
+}
+
+.spectralToggle:hover {
+  border-color: #fff;
+}
+
+.spectralToggle.is-active {
+  background-color: #35bd87;
+  color: #1a2326;
+  border-color: #1f6f51;
+  box-shadow: 0em 0.15em 0em #1f6f51;
 }
 
 #jokerAreaContainer {

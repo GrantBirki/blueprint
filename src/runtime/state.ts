@@ -45,5 +45,15 @@ export const state = {
     polychrome: false,
     disabled: false
   },
+  spectral: {
+    ankh: false,
+    hex: false,
+    ectoplasm: false,
+    immolate: false,
+    cryptid: false,
+    ouija: false,
+    soul: false,
+    blackHole: false
+  },
   highContrast: false
 };

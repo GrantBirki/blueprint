@@ -1,6 +1,15 @@
-# blueprint
+# Blueprint Balatro Calculator
 
-Balatro deck builder and calculator
+Live site: <https://blueprint.birki.io/>
+
+Blueprint is a Balatro deck builder and score calculator focused on fast iteration and visual clarity. It keeps the familiar Balatro look while adding quality-of-life improvements for experimentation and sharing.
+
+## Highlights
+- Build and reorder Joker and card decks with drag-and-drop.
+- Optimize Jokers and hands with optional minimization modes.
+- Inspect detailed breakdowns of score contributions.
+- Copy the current run as JSON for reproducible testing.
+- Share runs via the URL query string.
 
 ---
 

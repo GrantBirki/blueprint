@@ -36,6 +36,13 @@
           <div id="cardsInHand"></div>
         </div>
         <span class='limitText'><span id='handLimit'>0</span>/8</span><br>
+        <div id="spectralSection" class="spectralSection">
+          <div class="spectralHeader">
+            <span class="spectralTitle">Spectral</span>
+            <span id="spectralCount" class="spectralCount">0/8</span>
+          </div>
+          <div id="spectralToggles" class="spectralToggles"></div>
+        </div>
         <button type="button" class="resetBtn" onclick="playHand()">Play hand</button>
         <button type="button" class="resetBtn" onclick="clearHand()">Clear hand</button>
         <button type="button" class="resetBtn" onclick="resetHand()">Reset</button>
@@ -187,7 +194,7 @@
     </div><div id="footer">
         <a href='https://github.com/grantbirki/blueprint'>view code on GitHub</a>
     </div>
-    <div id="settingsModal" class="settingsModal" onclick="toggleSettings(false)">
+    <div id="settingsModal" class="settingsModal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1" onclick="toggleSettings(false)">
       <div class="settingsContent" onclick="event.stopPropagation()">
         <div class="settingsHeader">
           <span>Settings</span>

@@ -81,6 +81,13 @@ function changeTab(tab) {
 
 changeTab(0)();
 
+if(spectralToggles) {
+  spectralToggles.innerHTML = spectralCards
+    .map((item) => `<button type="button" class="spectralToggle" data-spectral="${item.id}" onclick="toggleSpectral('${item.id}')">${item.label}</button>`)
+    .join('');
+  updateSpectralUI();
+}
+
 const handLevels = document.getElementById('hands');
 const consumables = document.getElementById('consumables');
 const toggleJokerDiv = document.getElementById('toggleJokerBtn');
@@ -94,6 +101,39 @@ const settingsModal = document.getElementById('settingsModal');
 const optimizeJokersIndicator = document.getElementById('optimizeJokersIndicator');
 const optimizeCardsIndicator = document.getElementById('optimizeCardsIndicator');
 const copyJsonStatus = document.getElementById('copyJsonStatus');
+const spectralToggles = document.getElementById('spectralToggles');
+const spectralCount = document.getElementById('spectralCount');
+const settingsCloseButton = settingsModal ? settingsModal.querySelector('.settingsClose') : null;
+
+const spectralCards = [
+  { id: 'ankh', label: 'Ankh' },
+  { id: 'hex', label: 'Hex' },
+  { id: 'ectoplasm', label: 'Ectoplasm' },
+  { id: 'immolate', label: 'Immolate' },
+  { id: 'cryptid', label: 'Cryptid' },
+  { id: 'ouija', label: 'Ouija' },
+  { id: 'soul', label: 'The Soul' },
+  { id: 'blackHole', label: 'Black Hole' }
+];
+
+function updateSpectralUI() {
+  if(!spectralToggles || !spectralCount) return;
+  let enabled = 0;
+  for(const item of spectralCards) {
+    if(state.spectral[item.id]) enabled++;
+    const button = spectralToggles.querySelector(`[data-spectral="${item.id}"]`);
+    if(button) {
+      button.classList.toggle('is-active', !!state.spectral[item.id]);
+    }
+  }
+  spectralCount.innerText = `${enabled}/${spectralCards.length}`;
+}
+
+function toggleSpectral(id) {
+  if(!state.spectral || !(id in state.spectral)) return;
+  state.spectral[id] = !state.spectral[id];
+  updateSpectralUI();
+}
 
 function incrementLevel(inc, handIndex) {
   const hand = hands[handIndex];
@@ -367,11 +407,24 @@ function toggleSettings(next) {
   const shouldOpen = typeof next === 'boolean' ? next : !settingsModal.classList.contains('is-open');
   if(shouldOpen) {
     settingsModal.classList.add('is-open');
+    settingsModal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    if(settingsCloseButton && settingsCloseButton.focus) {
+      settingsCloseButton.focus();
+    }
   }
   else {
     settingsModal.classList.remove('is-open');
+    settingsModal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
   }
 }
+
+document.addEventListener('keydown', (event) => {
+  if(event.key === 'Escape' && settingsModal && settingsModal.classList.contains('is-open')) {
+    toggleSettings(false);
+  }
+});
 
 function updateOptimizeIndicators() {
   if(optimizeJokersIndicator) {
@@ -570,6 +623,7 @@ async function copyRunAsJson() {
       observatory: state.observatory,
       highContrast: state.highContrast
     },
+    spectral: { ...state.spectral },
     hands: hands.map(hand => ({
       name: hand.name,
       level: hand.level,
@@ -1728,6 +1782,7 @@ export {
   toggleMinimize,
   toggleObservatory,
   togglePlasma,
+  toggleSpectral,
   toggleSettings,
   toggleTheEye,
   toggleTheFlint,
