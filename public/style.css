@@ -913,6 +913,13 @@ input {
 .EV {
   font-size: 0.5em;
   color: #8d8;
+  cursor: help;
+}
+
+.scoreMeta {
+  font-size: 0.5em;
+  color: #c8d5db;
+  cursor: help;
 }
 
 .resetBtn {

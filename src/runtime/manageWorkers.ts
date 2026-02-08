@@ -3,7 +3,7 @@
 import { state } from "./state";
 import { hands, handColors } from "./data";
 import { Hand, normalizeBig } from "./breakdown";
-import { numberWithCommas, bigNumberWithCommas } from "./format";
+import { numberWithCommas, bigNumberWithCommas, formatBalatroScore } from "./format";
 import { redrawPlayfieldHTML } from "./main";
 
 const THREADS = navigator.hardwareConcurrency;
@@ -274,14 +274,38 @@ function workerMessage(msg) {
       optimizeBoth = false;
 
       if(tmpBestHighHand[0] === tmpBestLowHand[0] && tmpBestHighHand[1] === tmpBestLowHand[1]) {
-        bestPlayScoreDiv.innerHTML = chipIcon + bigNumberWithCommas(tmpBestHighHand, true);
+        bestPlayScoreDiv.innerHTML = chipIcon + formatBalatroScore(tmpBestHighHand);
         bestPlayNameDiv.innerHTML = hands[tmpTypeOfHand].name + `<span class="nameLvl" style="color: ${hands[tmpTypeOfHand].level === 1 ? handColors[0] : handColors[((Math.ceil(Math.abs(hands[tmpTypeOfHand].level)/6)*6+hands[tmpTypeOfHand].level+4)%6)+1]}"> lvl.${hands[tmpTypeOfHand].level}</span>`;
         scoreChipsDiv.innerText = numberWithCommas(tmpBestLowHand[2]);
         scoreMultDiv.innerText = bigNumberWithCommas(tmpBestLowHand[3]);
       }
       else {
-        bestPlayScoreDiv.innerHTML = bigNumberWithCommas(tmpBestLowHand, true) + ' &lt;' + chipIcon + '&lt; ' + bigNumberWithCommas(tmpBestHighHand, true);
-        bestPlayScoreDiv.innerHTML += `<br><span class="EV">Long-term EV</span> ${bigNumberWithCommas(tmpMeanScore, true)}<br><span class="EV">Short-term EV</span> ${bigNumberWithCommas(tmpMedianScore, true)}<br>`;
+        const formatScorePair = (left, right, threshold = 10, initialPrecision = 3, maxPrecision = 10) => {
+          let precision = initialPrecision;
+          let leftDisplay = formatBalatroScore(left, threshold, precision);
+          let rightDisplay = formatBalatroScore(right, threshold, precision);
+
+          while(leftDisplay === rightDisplay && precision < maxPrecision) {
+            precision += 1;
+            leftDisplay = formatBalatroScore(left, threshold, precision);
+            rightDisplay = formatBalatroScore(right, threshold, precision);
+          }
+
+          return [leftDisplay, rightDisplay];
+        };
+
+        const lowScoreExact = bigNumberWithCommas(tmpBestLowHand, true);
+        const highScoreExact = bigNumberWithCommas(tmpBestHighHand, true);
+        const [renderedLowScore, renderedHighScore] = formatScorePair(tmpBestLowHand, tmpBestHighHand);
+
+        const longTermExact = bigNumberWithCommas(tmpMeanScore, true);
+        const shortTermExact = bigNumberWithCommas(tmpMedianScore, true);
+        const [renderedLongTerm, renderedShortTerm] = formatScorePair(tmpMeanScore, tmpMedianScore);
+
+        bestPlayScoreDiv.innerHTML = chipIcon + `<span class="scoreMeta" title="Score range caused by random effects in this hand.">Range</span> ` +
+          `<span title="Lowest possible score (worst random outcomes). Exact: ${lowScoreExact}.">${renderedLowScore}</span> - ` +
+          `<span title="Highest possible score (best random outcomes). Exact: ${highScoreExact}.">${renderedHighScore}</span>`;
+        bestPlayScoreDiv.innerHTML += `<br><span class="EV" title="Average score across 10,001 random simulations of this exact hand.">Long-term EV</span> <span title="Exact long-term EV: ${longTermExact}.">${renderedLongTerm}</span><br><span class="EV" title="Median score across 10,001 random simulations of this exact hand.">Short-term EV</span> <span title="Exact short-term EV: ${shortTermExact}.">${renderedShortTerm}</span><br>`;
         bestPlayNameDiv.innerHTML = hands[tmpTypeOfHand].name + `<span class="nameLvl" style="color: ${hands[tmpTypeOfHand].level === 1 ? handColors[0] : handColors[((Math.ceil(Math.abs(hands[tmpTypeOfHand].level)/6)*6+hands[tmpTypeOfHand].level+4)%6)+1]}"> lvl.${hands[tmpTypeOfHand].level}</span>`;
         scoreChipsDiv.innerText = '>' + numberWithCommas(tmpBestLowHand[2]);
         scoreMultDiv.innerText = '>' + bigNumberWithCommas(tmpBestLowHand[3]);
