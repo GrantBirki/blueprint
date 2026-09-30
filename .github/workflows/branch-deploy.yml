@@ -10,7 +10,7 @@ cache-mode: none
 
 # set an environment variable for use in all the jobs pointing the site_url
 env:
-  site_url: https://shartly.club
+  site_url: https://blueprint.birki.io
 
 jobs:
   # branch-deploy trigger job
