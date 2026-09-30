@@ -18,6 +18,9 @@ jobs:
       - name: checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6
 
+      - name: test pages packaging
+        run: python3 -m unittest discover -s .github/scripts -p "test_*.py"
+
       - name: setup node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # pin@v6
         with:
